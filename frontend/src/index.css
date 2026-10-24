@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+@theme {
+  --color-brand: #097969;
+  --color-brand-dark: #065a4e;
+  --color-mint: #e6ffe6;
+  --color-canvas: #f4f7f6;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  @apply bg-canvas font-sans text-slate-800 antialiased;
+}
+
+::selection {
+  @apply bg-brand/20 text-slate-900;
+}
