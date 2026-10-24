@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BoardData",
+  "description": "A Kanban board, stored as JSON in boards.data. Rules JSON Schema cannot express: column ids are unique; each key in cards equals that card's id; every id in columns[].cardIds exists in cards; each card appears in exactly one column.",
+  "type": "object",
+  "required": ["columns", "cards"],
+  "additionalProperties": false,
+  "properties": {
+    "columns": {
+      "description": "Columns in display order.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "cardIds"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "cardIds": {
+            "description": "Card ids in display order.",
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "cards": {
+      "description": "Cards keyed by id.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["id", "title", "details"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "details": { "type": "string" }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "columns": [
+        { "id": "col-backlog", "title": "Backlog", "cardIds": ["card-1"] },
+        { "id": "col-done", "title": "Done", "cardIds": ["card-2"] }
+      ],
+      "cards": {
+        "card-1": { "id": "card-1", "title": "Align roadmap themes", "details": "Draft quarterly themes." },
+        "card-2": { "id": "card-2", "title": "Ship marketing page", "details": "Final copy approved." }
+      }
+    }
+  ]
+}
