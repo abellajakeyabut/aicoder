@@ -51,13 +51,6 @@ def client() -> OpenAI:
     return OpenAI(base_url="https://openrouter.ai/api/v1", api_key=os.environ["OPENROUTER_API_KEY"])
 
 
-def ask(prompt: str) -> str:
-    response = client().chat.completions.create(
-        model=MODEL, messages=[{"role": "user", "content": prompt}]
-    )
-    return response.choices[0].message.content
-
-
 def chat(board: Board, message: str, history: list[Message]) -> AIResponse | None:
     # The board goes in the latest message, after the history: with it in the system prompt the
     # model sometimes re-applied changes from earlier messages (duplicate cards)

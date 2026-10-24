@@ -4,6 +4,8 @@ import os
 from types import SimpleNamespace
 
 import pytest
+from openai import OpenAIError
+from pydantic import ValidationError
 
 from app.ai import AIBoard, AIResponse
 from app.db import DEFAULT_BOARD
@@ -60,9 +62,65 @@ def test_invalid_board_is_not_saved(client, monkeypatch):
     assert client.get("/api/board").json() == DEFAULT
 
 
+def remove_column(board: dict):
+    # Move the Done cards to Review so the board is otherwise valid
+    done = board["columns"].pop()
+    board["columns"][-1]["cardIds"] += done["cardIds"]
+
+
+def add_column(board: dict):
+    board["columns"].append({"id": "col-extra", "title": "Extra", "cardIds": []})
+
+
+def reorder_columns(board: dict):
+    board["columns"].reverse()
+
+
+@pytest.mark.parametrize("change", [remove_column, add_column, reorder_columns])
+def test_changed_columns_are_not_saved(client, monkeypatch, change):
+    board = copy.deepcopy(DEFAULT)
+    change(board)
+    mock_ai(monkeypatch, AIResponse(reply="Done.", board=AIBoard.from_board(Board.model_validate(board))))
+    response = client.post("/api/chat", json={"message": "Change the columns"})
+    assert response.status_code == 502
+    assert client.get("/api/board").json() == DEFAULT
+
+
+def test_renamed_column_is_saved(client, monkeypatch):
+    board = copy.deepcopy(DEFAULT)
+    board["columns"][0]["title"] = "Ideas"
+    mock_ai(monkeypatch, AIResponse(reply="Renamed.", board=AIBoard.from_board(Board.model_validate(board))))
+    response = client.post("/api/chat", json={"message": "Rename Backlog to Ideas"})
+    assert response.status_code == 200
+    assert client.get("/api/board").json() == board
+
+
 def test_empty_ai_response_is_an_error(client, monkeypatch):
     mock_ai(monkeypatch, None)
     response = client.post("/api/chat", json={"message": "How many cards are in Done?"})
+    assert response.status_code == 502
+    assert client.get("/api/board").json() == DEFAULT
+
+
+def failing_ai(monkeypatch, error: Exception):
+    def parse(**kwargs):
+        raise error
+
+    fake = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(parse=parse)))
+    monkeypatch.setattr("app.ai.client", lambda: fake)
+
+
+def validation_error() -> ValidationError:
+    try:
+        AIResponse.model_validate({})
+    except ValidationError as error:
+        return error
+
+
+@pytest.mark.parametrize("error", [OpenAIError("Connection error"), validation_error()])
+def test_ai_failure_is_a_bad_gateway(client, monkeypatch, error):
+    failing_ai(monkeypatch, error)
+    response = client.post("/api/chat", json={"message": "Add a card"})
     assert response.status_code == 502
     assert client.get("/api/board").json() == DEFAULT
 

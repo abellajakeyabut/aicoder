@@ -1,4 +1,4 @@
-import { fetchBoard, saveBoard } from "@/lib/api";
+import { fetchBoard, saveBoard, sendChat } from "@/lib/api";
 import { initialData } from "@/lib/kanban";
 
 const boardWithTitle = (title: string) => ({
@@ -42,6 +42,38 @@ describe("api", () => {
     await first;
     await second;
     expect(sentTitles(fetchMock)).toEqual(["first", "second"]);
+  });
+
+  it("sends a chat message only after pending saves finish", async () => {
+    let releaseSave!: () => void;
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (releaseSave = () => resolve(new Response(null))))
+      )
+      .mockImplementation(async () => Response.json({ reply: "Hi.", board: null }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    saveBoard(boardWithTitle("latest"));
+    const chat = sendChat("Hello", []);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    releaseSave();
+    expect(await chat).toEqual({ reply: "Hi.", board: null });
+    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(["/api/board", "/api/chat"]);
+  });
+
+  it("sends a chat message after a failed save", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 422 }))
+      .mockResolvedValue(Response.json({ reply: "Hi.", board: null }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(saveBoard(boardWithTitle("bad"))).rejects.toThrow();
+    expect(await sendChat("Hello", [])).toEqual({ reply: "Hi.", board: null });
   });
 
   it("keeps saving after a failed save", async () => {

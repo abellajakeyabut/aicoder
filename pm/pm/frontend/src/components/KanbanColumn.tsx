@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import clsx from "clsx";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -23,6 +24,7 @@ export const KanbanColumn = ({
   onEditCard,
 }: KanbanColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const titleOnFocus = useRef(column.title);
 
   return (
     <section
@@ -44,6 +46,9 @@ export const KanbanColumn = ({
           <input
             value={column.title}
             onChange={(event) => onRename(column.id, event.target.value)}
+            onFocus={() => (titleOnFocus.current = column.title)}
+            // A column can't be left without a name: restore the title it had before editing
+            onBlur={() => !column.title.trim() && onRename(column.id, titleOnFocus.current)}
             className="mt-3 w-full bg-transparent font-display text-lg font-semibold text-[var(--navy-dark)] outline-none"
             aria-label="Column title"
           />

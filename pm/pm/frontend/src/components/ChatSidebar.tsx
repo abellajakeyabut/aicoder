@@ -6,14 +6,15 @@ import { sendChat, type ChatMessage } from "@/lib/api";
 import type { BoardData } from "@/lib/kanban";
 
 type ChatSidebarProps = {
+  loading: boolean;
+  onLoadingChange: (loading: boolean) => void;
   onBoardUpdate: (board: BoardData) => void;
 };
 
-export const ChatSidebar = ({ onBoardUpdate }: ChatSidebarProps) => {
+export const ChatSidebar = ({ loading, onLoadingChange, onBoardUpdate }: ChatSidebarProps) => {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +33,7 @@ export const ChatSidebar = ({ onBoardUpdate }: ChatSidebarProps) => {
     setMessages([...history, { role: "user", content: message }]);
     setInput("");
     setError(false);
-    setLoading(true);
+    onLoadingChange(true);
     try {
       const { reply, board } = await sendChat(message, history);
       setMessages((current) => [...current, { role: "assistant", content: reply }]);
@@ -40,9 +41,12 @@ export const ChatSidebar = ({ onBoardUpdate }: ChatSidebarProps) => {
         onBoardUpdate(board);
       }
     } catch {
+      // Drop the unanswered message from the history and put it back in the input to retry
+      setMessages(history);
+      setInput(message);
       setError(true);
     } finally {
-      setLoading(false);
+      onLoadingChange(false);
     }
   };
 

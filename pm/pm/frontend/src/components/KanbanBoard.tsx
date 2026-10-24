@@ -11,6 +11,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import clsx from "clsx";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
@@ -21,6 +22,9 @@ import { createId, moveCard, type BoardData } from "@/lib/kanban";
 export const KanbanBoard = () => {
   const [board, setBoard] = useState<BoardData | null>(null);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -29,20 +33,28 @@ export const KanbanBoard = () => {
   );
 
   useEffect(() => {
-    fetchBoard().then(setBoard);
+    fetchBoard().then(setBoard, () => setLoadFailed(true));
   }, []);
 
   if (!board) {
-    return (
+    return loadFailed ? (
+      <p role="alert" className="p-12 text-sm font-medium text-[var(--secondary-purple)]">
+        Could not load the board. Check that the server is running, then reload the page.
+      </p>
+    ) : (
       <p className="p-12 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
         Loading board...
       </p>
     );
   }
 
+  // Each save sends the whole board, so a later successful save also stores any earlier failed change
   const commit = (next: BoardData) => {
     setBoard(next);
-    saveBoard(next);
+    saveBoard(next).then(
+      () => setSaveFailed(false),
+      () => setSaveFailed(true)
+    );
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -78,7 +90,7 @@ export const KanbanBoard = () => {
       ...board,
       cards: {
         ...board.cards,
-        [id]: { id, title, details: details || "No details yet." },
+        [id]: { id, title, details },
       },
       columns: board.columns.map((column) =>
         column.id === columnId
@@ -93,7 +105,7 @@ export const KanbanBoard = () => {
       ...board,
       cards: {
         ...board.cards,
-        [cardId]: { id: cardId, title, details: details || "No details yet." },
+        [cardId]: { id: cardId, title, details },
       },
     });
   };
@@ -168,27 +180,35 @@ export const KanbanBoard = () => {
               </div>
             ))}
           </div>
+          {saveFailed && (
+            <p role="alert" className="text-sm font-medium text-[var(--secondary-purple)]">
+              Your last change could not be saved. Check that the server is running.
+            </p>
+          )}
         </header>
 
+        {/* The board is locked while the AI works: its reply replaces the whole board, so edits made meanwhile would be lost */}
         <DndContext
-          sensors={sensors}
+          sensors={chatLoading ? [] : sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <section className="grid gap-6 @2xl:grid-cols-3 @6xl:grid-cols-5">
-            {board.columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                cards={column.cardIds.map((cardId) => board.cards[cardId])}
-                onRename={handleRenameColumn}
-                onAddCard={handleAddCard}
-                onDeleteCard={handleDeleteCard}
-                onEditCard={handleEditCard}
-              />
-            ))}
-          </section>
+          <fieldset disabled={chatLoading} className={clsx("min-w-0 transition", chatLoading && "opacity-60")}>
+            <section className="grid gap-6 @2xl:grid-cols-3 @6xl:grid-cols-5">
+              {board.columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  cards={column.cardIds.map((cardId) => board.cards[cardId])}
+                  onRename={handleRenameColumn}
+                  onAddCard={handleAddCard}
+                  onDeleteCard={handleDeleteCard}
+                  onEditCard={handleEditCard}
+                />
+              ))}
+            </section>
+          </fieldset>
           <DragOverlay>
             {activeCard ? (
               <div className="w-[260px]">
@@ -200,7 +220,7 @@ export const KanbanBoard = () => {
       </main>
 
       {/* The backend already saved any board from the AI, so set state without saving again */}
-      <ChatSidebar onBoardUpdate={setBoard} />
+      <ChatSidebar loading={chatLoading} onLoadingChange={setChatLoading} onBoardUpdate={setBoard} />
     </div>
   );
 };

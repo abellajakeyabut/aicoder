@@ -32,6 +32,8 @@ export type ChatResponse = { reply: string; board: BoardData | null };
 
 // The backend saves any board the AI returns, so the caller only needs to show it
 export const sendChat = async (message: string, history: ChatMessage[]): Promise<ChatResponse> => {
+  // The backend reads the stored board, so let pending saves land first; a failed save doesn't block the chat
+  await pendingSave.catch(() => {});
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

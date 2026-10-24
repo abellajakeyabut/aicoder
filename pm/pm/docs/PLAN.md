@@ -21,7 +21,7 @@ Data
 
 Frontend
 - Static export (`output: "export"`). Under `next dev`, `next.config.ts` rewrites `/api/*` to `http://localhost:8000` (rewrites only work in dev, not in a static export).
-- Sign-in is frontend-only: the browser checks `user`/`password` and stores localStorage `pm-auth`. `page.tsx` reads it with `useSyncExternalStore` (null during prerender, so nothing renders until the client knows). The backend API always acts as the fixed user `user`.
+- Sign-in is frontend-only: the browser checks `user`/`password` and stores localStorage `pm-auth`. `page.tsx` reads it with `useSyncExternalStore` (null during prerender, so nothing renders until the client knows). The backend API always acts as the fixed user `user` and is unauthenticated: anyone who can reach port 8000 can read and replace the board. Real sign-in must add a backend check before the app is exposed beyond localhost.
 - The board loads on mount. Every change sets state and PUTs the whole board. Saves are chained so they reach the backend in order, because column renames save on every keystroke. A failed save doesn't block later ones.
 - Cards are edited with an Edit button that opens an inline form. While editing, dnd-kit attributes and listeners are not applied (otherwise the form sits inside a disabled `role="button"`).
 - Styling follows the existing demo: the AGENTS.md colors as CSS variables, rounded white cards on a light surface, soft navy shadows, Space Grotesk and Manrope fonts. New UI (login, chat) reuses it.
@@ -188,7 +188,7 @@ Goal: a chat endpoint that sends the board and the conversation to the AI and ca
 - [x] The system prompt explains the board JSON format and the rules (keep ids stable, create ids for new cards, return the full board only when changing it); include the current board JSON (sent in the latest user message, see Findings)
 - [x] Response format: Structured Outputs (`response_format` JSON schema) for `{reply: str, board: Board | null}`, parsed with Pydantic. The AI-facing `AIBoard` lists cards as an array (strict mode does not allow the `cards` map) and is converted back to `Board`
 - [x] If `board` is present, validate it with the Part 6 `Board` model and save it; return `{reply, board}` to the client. Invalid board or empty AI response: 502, nothing saved
-- [x] Remove `/api/ai/test` or keep it only as a connectivity check (kept)
+- [x] Remove `/api/ai/test` or keep it only as a connectivity check (kept; removed after the code review in `docs/code_review.md`)
 - [x] Update `backend/AGENTS.md`
 
 Tests:
