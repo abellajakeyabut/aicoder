@@ -2,12 +2,14 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { initialData } from "@/lib/kanban";
-import { lastSavedBoard, mockApi, savedBoards } from "@/test/mockApi";
+import { lastSavedBoard, mockApi, requests, savedBoards } from "@/test/mockApi";
 
 let fetchMock: ReturnType<typeof mockApi>;
 
+const board = (onChange = vi.fn()) => <KanbanBoard boardId={1} name="My first board" onChange={onChange} />;
+
 const renderBoard = async () => {
-  render(<KanbanBoard />);
+  render(board());
   return (await screen.findAllByTestId(/column-/i))[0];
 };
 
@@ -17,11 +19,24 @@ describe("KanbanBoard", () => {
   });
 
   it("shows a loading state, then the board from the API", async () => {
-    render(<KanbanBoard />);
+    render(board());
     expect(screen.getByText("Loading board...")).toBeInTheDocument();
     expect(await screen.findAllByTestId(/column-/i)).toHaveLength(5);
     expect(screen.getByText("Align roadmap themes")).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith("/api/board");
+    expect(requests(fetchMock)).toEqual(["GET /api/boards/1"]);
+    expect(screen.getByRole("heading", { name: "My first board" })).toBeInTheDocument();
+  });
+
+  it("shows the card totals in the header and updates them", async () => {
+    const column = await renderBoard();
+    const header = screen.getByRole("banner");
+    expect(within(header).getByText("Cards").nextSibling).toHaveTextContent("8");
+    expect(within(header).getByText("High priority").nextSibling).toHaveTextContent("2");
+    expect(column).toHaveTextContent("2 cards");
+    await userEvent.click(within(column).getByRole("button", { name: "Delete Align roadmap themes" }));
+    expect(within(header).getByText("Cards").nextSibling).toHaveTextContent("7");
+    expect(within(header).getByText("High priority").nextSibling).toHaveTextContent("1");
+    expect(column).toHaveTextContent("1 cards");
   });
 
   it("renames a column and saves it", async () => {
@@ -44,12 +59,12 @@ describe("KanbanBoard", () => {
 
   it("shows an error when the board can't be loaded", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 500 })));
-    render(<KanbanBoard />);
+    render(board());
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the board");
   });
 
   it("shows an error when a save fails, and clears it after the next save", async () => {
-    const saves = [new Response(null, { status: 500 }), new Response(null)];
+    const saves = [new Response(null, { status: 500 }), Response.json({})];
     vi.stubGlobal(
       "fetch",
       vi.fn(async (_url: string, init?: RequestInit) =>
@@ -76,7 +91,7 @@ describe("KanbanBoard", () => {
     await waitFor(() => expect(savedBoards(fetchMock)).toHaveLength(1));
     const saved = lastSavedBoard(fetchMock)!;
     const newId = saved.columns[0].cardIds[2];
-    expect(saved.cards[newId]).toEqual({ id: newId, title: "New card", details: "Notes" });
+    expect(saved.cards[newId]).toEqual({ id: newId, title: "New card", details: "Notes", priority: null, dueDate: null });
   });
 
   it("saves empty details as empty and shows a placeholder", async () => {
@@ -133,6 +148,8 @@ describe("KanbanBoard", () => {
         id: "card-1",
         title: "Updated title",
         details: "Updated details",
+        priority: "high",
+        dueDate: "2026-11-14",
       })
     );
   });
@@ -145,5 +162,63 @@ describe("KanbanBoard", () => {
 
     expect(within(column).getByText("Align roadmap themes")).toBeInTheDocument();
     expect(savedBoards(fetchMock)).toHaveLength(0);
+  });
+
+  it("sets a card's priority and due date, and clears them", async () => {
+    const column = await renderBoard();
+    const card = within(column).getByTestId("card-card-2");
+    expect(within(card).queryByText("priority")).not.toBeInTheDocument();
+
+    await userEvent.click(within(card).getByRole("button", { name: "Edit Gather customer signals" }));
+    await userEvent.selectOptions(within(card).getByLabelText("Priority"), "medium");
+    await userEvent.type(within(card).getByLabelText("Due date"), "2026-12-24");
+    await userEvent.click(within(card).getByRole("button", { name: "Save" }));
+
+    expect(card).toHaveTextContent("medium priority");
+    expect(card).toHaveTextContent("due Dec 24");
+    await waitFor(() =>
+      expect(lastSavedBoard(fetchMock)?.cards["card-2"]).toMatchObject({ priority: "medium", dueDate: "2026-12-24" })
+    );
+
+    await userEvent.click(within(card).getByRole("button", { name: "Edit Gather customer signals" }));
+    expect(within(card).getByLabelText("Priority")).toHaveValue("medium");
+    expect(within(card).getByLabelText("Due date")).toHaveValue("2026-12-24");
+    await userEvent.selectOptions(within(card).getByLabelText("Priority"), "");
+    await userEvent.clear(within(card).getByLabelText("Due date"));
+    await userEvent.click(within(card).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(lastSavedBoard(fetchMock)?.cards["card-2"]).toMatchObject({ priority: null, dueDate: null })
+    );
+  });
+
+  describe("on 2026-11-10", () => {
+    beforeEach(() => {
+      // Only Date is faked, so user events still run
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-10T12:00:00"));
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it("counts and marks overdue cards, except finished ones", async () => {
+      const data = structuredClone(initialData);
+      data.cards["card-7"].dueDate = "2026-11-01"; // in Done, so not overdue
+      fetchMock.mockImplementationOnce(async () => Response.json(data));
+      await renderBoard();
+
+      // card-4 (Nov 7, In Progress) and card-6 (Nov 3, Review); card-1 is due Nov 14
+      expect(within(screen.getByRole("banner")).getByText("Overdue").nextSibling).toHaveTextContent("2");
+      expect(screen.getByTestId("card-card-4")).toHaveTextContent("Overdue, due Nov 7");
+      expect(screen.getByTestId("card-card-6")).toHaveTextContent("Overdue, due Nov 3");
+      expect(screen.getByTestId("card-card-1")).not.toHaveTextContent("Overdue");
+      expect(screen.getByTestId("card-card-7")).not.toHaveTextContent("Overdue");
+    });
+  });
+
+  it("reports every change to onChange", async () => {
+    const onChange = vi.fn();
+    render(board(onChange));
+    const column = (await screen.findAllByTestId(/column-/i))[0];
+    await userEvent.click(within(column).getByRole("button", { name: "Delete Align roadmap themes" }));
+    expect(Object.keys(onChange.mock.lastCall![0].cards)).toHaveLength(7);
   });
 });

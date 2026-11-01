@@ -32,3 +32,8 @@ body {
 .font-display {
   font-family: var(--font-display), "Segoe UI", sans-serif;
 }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(3, 33, 71, 0.18) transparent;
+}

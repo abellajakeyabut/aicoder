@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 backend/static/
 *.db
+.coverage
+coverage/
+.claude/*.local.*

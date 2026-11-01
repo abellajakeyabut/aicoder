@@ -12,16 +12,38 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import clsx from "clsx";
+import { Sparkles } from "lucide-react";
 import { ChatSidebar } from "@/components/ChatSidebar";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { fetchBoard, saveBoard } from "@/lib/api";
-import { logout } from "@/lib/auth";
-import { createId, moveCard, type BoardData } from "@/lib/kanban";
+import { createId, isOverdue, moveCard, today, type BoardData, type Card } from "@/lib/kanban";
 
-export const KanbanBoard = () => {
+const Stat = ({ label, value, accent }: { label: string; value: number; accent?: boolean }) => (
+  <div>
+    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">{label}</p>
+    <p
+      className={clsx(
+        "font-display text-xl font-semibold",
+        accent && value > 0 ? "text-[var(--secondary-purple)]" : "text-[var(--primary-blue)]"
+      )}
+    >
+      {value}
+    </p>
+  </div>
+);
+
+type KanbanBoardProps = {
+  boardId: number;
+  name: string;
+  // Called with every new board, so the board list can show the card count
+  onChange: (board: BoardData) => void;
+};
+
+export const KanbanBoard = ({ boardId, name, onChange }: KanbanBoardProps) => {
   const [board, setBoard] = useState<BoardData | null>(null);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
@@ -33,8 +55,8 @@ export const KanbanBoard = () => {
   );
 
   useEffect(() => {
-    fetchBoard().then(setBoard, () => setLoadFailed(true));
-  }, []);
+    fetchBoard(boardId).then(setBoard, () => setLoadFailed(true));
+  }, [boardId]);
 
   if (!board) {
     return loadFailed ? (
@@ -51,7 +73,8 @@ export const KanbanBoard = () => {
   // Each save sends the whole board, so a later successful save also stores any earlier failed change
   const commit = (next: BoardData) => {
     setBoard(next);
-    saveBoard(next).then(
+    onChange(next);
+    saveBoard(boardId, next).then(
       () => setSaveFailed(false),
       () => setSaveFailed(true)
     );
@@ -90,7 +113,7 @@ export const KanbanBoard = () => {
       ...board,
       cards: {
         ...board.cards,
-        [id]: { id, title, details },
+        [id]: { id, title, details, priority: null, dueDate: null },
       },
       columns: board.columns.map((column) =>
         column.id === columnId
@@ -100,14 +123,8 @@ export const KanbanBoard = () => {
     });
   };
 
-  const handleEditCard = (cardId: string, title: string, details: string) => {
-    commit({
-      ...board,
-      cards: {
-        ...board.cards,
-        [cardId]: { id: cardId, title, details },
-      },
-    });
+  const handleEditCard = (card: Card) => {
+    commit({ ...board, cards: { ...board.cards, [card.id]: card } });
   };
 
   const handleDeleteCard = (columnId: string, cardId: string) => {
@@ -128,78 +145,73 @@ export const KanbanBoard = () => {
   };
 
   const activeCard = activeCardId ? board.cards[activeCardId] : null;
+  const cards = Object.values(board.cards);
+  // Cards in the last column are finished, so they are never overdue
+  const finished = new Set(board.columns.at(-1)?.cardIds);
+  const now = today();
+  const overdue = cards.filter((card) => !finished.has(card.id) && isOverdue(card, now)).length;
 
   return (
     // overflow-clip (not hidden) so the sticky chat sidebar still sticks
     <div className="relative flex overflow-clip">
-      <div className="pointer-events-none absolute left-0 top-0 h-[420px] w-[420px] -translate-x-1/3 -translate-y-1/3 rounded-full bg-[radial-gradient(circle,_rgba(32,157,215,0.25)_0%,_rgba(32,157,215,0.05)_55%,_transparent_70%)]" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-[520px] w-[520px] translate-x-1/4 translate-y-1/4 rounded-full bg-[radial-gradient(circle,_rgba(117,57,145,0.18)_0%,_rgba(117,57,145,0.05)_55%,_transparent_75%)]" />
 
-      {/* A container, so the column grid follows the board width as the sidebar opens and closes */}
-      <main className="@container relative mx-auto flex min-h-screen min-w-0 max-w-[1500px] flex-1 flex-col gap-10 px-6 pb-16 pt-12">
-        <header className="flex flex-col gap-6 rounded-[32px] border border-[var(--stroke)] bg-white/80 p-8 shadow-[var(--shadow)] backdrop-blur">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--gray-text)]">
-                Single Board Kanban
-              </p>
-              <h1 className="mt-3 font-display text-4xl font-semibold text-[var(--navy-dark)]">
-                Kanban Studio
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--gray-text)]">
-                Keep momentum visible. Rename columns, drag cards between stages,
-                and capture quick notes without getting buried in settings.
-              </p>
+      <main className="relative flex min-h-screen min-w-0 flex-1 flex-col gap-6 px-6 pb-10 pt-6">
+        <header className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-3xl border border-[var(--stroke)] bg-white/80 px-6 py-4 shadow-[var(--shadow)] backdrop-blur">
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-2xl font-semibold leading-tight text-[var(--navy-dark)]">
+              {name}
+            </h1>
+            <p className="text-sm text-[var(--gray-text)]">
+              Rename columns, drag cards between stages, set priorities and due dates.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <div className="flex gap-6">
+              <Stat label="Cards" value={cards.length} />
+              <Stat label="High priority" value={cards.filter((card) => card.priority === "high").length} />
+              <Stat label="Overdue" value={overdue} accent />
             </div>
-            <div className="flex items-start gap-4">
-              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] px-5 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
-                  Focus
-                </p>
-                <p className="mt-2 text-lg font-semibold text-[var(--primary-blue)]">
-                  One board. Five columns. Zero clutter.
-                </p>
-              </div>
+            {!chatOpen && (
               <button
                 type="button"
-                onClick={logout}
-                className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:border-[var(--primary-blue)] hover:text-[var(--navy-dark)]"
+                onClick={() => setChatOpen(true)}
+                className="flex items-center gap-2 whitespace-nowrap rounded-full bg-[var(--navy-dark)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-125"
               >
-                Log out
+                <Sparkles size={16} className="text-[var(--accent-yellow)]" />
+                Open AI chat
               </button>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            {board.columns.map((column) => (
-              <div
-                key={column.id}
-                className="flex items-center gap-2 rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--navy-dark)]"
-              >
-                <span className="h-2 w-2 rounded-full bg-[var(--accent-yellow)]" />
-                {column.title}
-              </div>
-            ))}
+            )}
           </div>
           {saveFailed && (
-            <p role="alert" className="text-sm font-medium text-[var(--secondary-purple)]">
+            <p role="alert" className="w-full text-sm font-medium text-[var(--secondary-purple)]">
               Your last change could not be saved. Check that the server is running.
             </p>
           )}
         </header>
-
         {/* The board is locked while the AI works: its reply replaces the whole board, so edits made meanwhile would be lost */}
         <DndContext
-          sensors={chatLoading ? [] : sensors}
+          sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <fieldset disabled={chatLoading} className={clsx("min-w-0 transition", chatLoading && "opacity-60")}>
-            <section className="grid gap-6 @2xl:grid-cols-3 @6xl:grid-cols-5">
-              {board.columns.map((column) => (
+          {/* display: contents, because a fieldset box does not pass its flex height on to the columns */}
+          <fieldset disabled={chatLoading} className="contents">
+            {/* One row of columns that share the width; narrower than the minimum, the board scrolls sideways.
+                The negative margin and padding keep the column shadows inside the scroll area */}
+            <section
+              className={clsx(
+                "-mx-3 -mb-6 -mt-3 grid min-w-0 flex-1 auto-cols-[minmax(210px,1fr)] grid-flow-col gap-3 overflow-x-auto px-3 pb-6 pt-3 transition",
+                chatLoading && "opacity-60"
+              )}
+            >
+              {board.columns.map((column, index) => (
                 <KanbanColumn
                   key={column.id}
                   column={column}
+                  finished={index === board.columns.length - 1}
+                  locked={chatLoading}
+                  today={now}
                   cards={column.cardIds.map((cardId) => board.cards[cardId])}
                   onRename={handleRenameColumn}
                   onAddCard={handleAddCard}
@@ -211,7 +223,7 @@ export const KanbanBoard = () => {
           </fieldset>
           <DragOverlay>
             {activeCard ? (
-              <div className="w-[260px]">
+              <div className="w-[210px]">
                 <KanbanCardPreview card={activeCard} />
               </div>
             ) : null}
@@ -220,7 +232,17 @@ export const KanbanBoard = () => {
       </main>
 
       {/* The backend already saved any board from the AI, so set state without saving again */}
-      <ChatSidebar loading={chatLoading} onLoadingChange={setChatLoading} onBoardUpdate={setBoard} />
+      <ChatSidebar
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        loading={chatLoading}
+        onLoadingChange={setChatLoading}
+        boardId={boardId}
+        onBoardUpdate={(next) => {
+          setBoard(next);
+          onChange(next);
+        }}
+      />
     </div>
   );
 };

@@ -2,17 +2,20 @@
 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import clsx from "clsx";
+import { SendHorizontal, Sparkles, X } from "lucide-react";
 import { sendChat, type ChatMessage } from "@/lib/api";
 import type { BoardData } from "@/lib/kanban";
 
 type ChatSidebarProps = {
+  boardId: number;
+  open: boolean;
+  onClose: () => void;
   loading: boolean;
   onLoadingChange: (loading: boolean) => void;
   onBoardUpdate: (board: BoardData) => void;
 };
 
-export const ChatSidebar = ({ loading, onLoadingChange, onBoardUpdate }: ChatSidebarProps) => {
-  const [open, setOpen] = useState(false);
+export const ChatSidebar = ({ boardId, open, onClose, loading, onLoadingChange, onBoardUpdate }: ChatSidebarProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [error, setError] = useState(false);
@@ -35,7 +38,7 @@ export const ChatSidebar = ({ loading, onLoadingChange, onBoardUpdate }: ChatSid
     setError(false);
     onLoadingChange(true);
     try {
-      const { reply, board } = await sendChat(message, history);
+      const { reply, board } = await sendChat(boardId, message, history);
       setMessages((current) => [...current, { role: "assistant", content: reply }]);
       if (board) {
         onBoardUpdate(board);
@@ -64,44 +67,35 @@ export const ChatSidebar = ({ loading, onLoadingChange, onBoardUpdate }: ChatSid
   };
 
   if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-10 flex items-center gap-2 rounded-full bg-[var(--navy-dark)] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-white shadow-[var(--shadow)] transition hover:brightness-125"
-      >
-        <span className="h-2 w-2 rounded-full bg-[var(--accent-yellow)]" />
-        Open AI chat
-      </button>
-    );
+    return null;
   }
 
   return (
     <aside
       aria-label="AI chat"
-      className="sticky top-0 flex h-screen w-[360px] shrink-0 flex-col border-l border-[var(--stroke)] bg-white/90 shadow-[var(--shadow)] backdrop-blur"
+      className="sticky top-0 flex h-screen w-[340px] shrink-0 flex-col border-l border-[var(--stroke)] bg-white/90 shadow-[var(--shadow)] backdrop-blur"
     >
-      <div className="flex items-start justify-between gap-4 border-b border-[var(--stroke)] p-6">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--gray-text)]">
-            AI Assistant
-          </p>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-[var(--navy-dark)]">
-            Board chat
-          </h2>
-          <div className="mt-3 h-1 w-10 rounded-full bg-[var(--accent-yellow)]" />
+      <div className="flex items-center justify-between gap-4 border-b border-[var(--stroke)] px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--navy-dark)] text-[var(--accent-yellow)]">
+            <Sparkles size={17} />
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-semibold leading-tight text-[var(--navy-dark)]">Board chat</h2>
+            <p className="text-xs text-[var(--gray-text)]">AI assistant</p>
+          </div>
         </div>
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={onClose}
           aria-label="Close chat"
-          className="rounded-full border border-[var(--stroke)] px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:border-[var(--primary-blue)] hover:text-[var(--navy-dark)]"
+          title="Close chat"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--gray-text)] transition hover:bg-[var(--surface)] hover:text-[var(--navy-dark)]"
         >
-          Close
+          <X size={18} />
         </button>
       </div>
-
-      <div ref={listRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-6">
+      <div ref={listRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-5">
         {messages.length === 0 && (
           <p className="text-sm leading-6 text-[var(--gray-text)]">
             Ask me to add, edit or move cards, or ask anything about the board.
@@ -132,7 +126,7 @@ export const ChatSidebar = ({ loading, onLoadingChange, onBoardUpdate }: ChatSid
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 border-t border-[var(--stroke)] p-6">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3 border-t border-[var(--stroke)] p-5">
         <textarea
           value={input}
           onChange={(event) => setInput(event.target.value)}
@@ -145,8 +139,9 @@ export const ChatSidebar = ({ loading, onLoadingChange, onBoardUpdate }: ChatSid
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="rounded-full bg-[var(--secondary-purple)] px-4 py-3 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-full bg-[var(--secondary-purple)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
+          <SendHorizontal size={15} />
           Send
         </button>
       </form>

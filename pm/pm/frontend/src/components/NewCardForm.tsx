@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Plus } from "lucide-react";
 
 const initialFormState = { title: "", details: "" };
 
@@ -21,7 +22,7 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
   };
 
   return (
-    <div className="mt-4">
+    <div>
       {isOpen ? (
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
@@ -65,8 +66,9 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="w-full rounded-full border border-dashed border-[var(--stroke)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--primary-blue)] transition hover:border-[var(--primary-blue)]"
+          className="flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--primary-blue)] transition hover:bg-[var(--surface)]"
         >
+          <Plus size={15} />
           Add a card
         </button>
       )}

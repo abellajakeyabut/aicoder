@@ -1,14 +1,8 @@
-import { expect, test } from "@playwright/test";
-import { dragTo, login, resetBoard } from "./helpers";
-
-test.beforeEach(async ({ page, request }) => {
-  await resetBoard(request);
-  await login(page);
-});
+import { dragTo, expect, test } from "./helpers";
 
 test("loads the kanban board", async ({ page }) => {
-  await expect(page.getByRole("heading", { name: "Kanban Studio" })).toBeVisible();
   await expect(page.locator('[data-testid^="column-"]')).toHaveCount(5);
+  await expect(page.getByTestId("card-card-1")).toContainText("high priority");
 });
 
 test("adds a card to a column", async ({ page }) => {
@@ -20,17 +14,40 @@ test("adds a card to a column", async ({ page }) => {
   await expect(firstColumn.getByText("Playwright card")).toBeVisible();
 });
 
-test("edits a card", async ({ page }) => {
-  const card = page.getByTestId("card-card-1");
-  await card.getByRole("button", { name: "Edit Align roadmap themes" }).click();
+test("edits a card's title, details, priority and due date", async ({ page }) => {
+  const card = page.getByTestId("card-card-2");
+  await card.getByRole("button", { name: "Edit Gather customer signals" }).click();
   await card.getByLabel("Edit title").fill("Edited title");
   await card.getByLabel("Edit details").fill("Edited details");
+  await card.getByLabel("Priority").selectOption("high");
+  await card.getByLabel("Due date").fill("2030-02-14");
   await card.getByRole("button", { name: "Save" }).click();
   await expect(card.getByText("Edited title")).toBeVisible();
   await expect(card.getByText("Edited details")).toBeVisible();
+  await expect(card).toContainText("high priority");
+  await expect(card).toContainText("due Feb 14");
+  await expect(card).not.toContainText("Overdue");
+});
+
+test("marks past due cards as overdue and counts them", async ({ page }) => {
+  const overdue = page.getByText("Overdue", { exact: true }).locator("xpath=following-sibling::p");
+  const before = Number(await overdue.textContent());
+
+  const card = page.getByTestId("card-card-2");
+  await card.getByRole("button", { name: "Edit Gather customer signals" }).click();
+  await card.getByLabel("Due date").fill("2020-01-01");
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(card).toContainText("Overdue, due Jan 1");
+  await expect(overdue).toHaveText(String(before + 1));
 });
 
 test("moves a card between columns", async ({ page }) => {
   await dragTo(page, "card-card-1", "column-col-review");
   await expect(page.getByTestId("column-col-review").getByTestId("card-card-1")).toBeVisible();
+});
+
+test("deletes a card", async ({ page }) => {
+  await page.getByTestId("card-card-1").getByRole("button", { name: "Delete Align roadmap themes" }).click();
+  await expect(page.getByTestId("card-card-1")).toHaveCount(0);
+  await expect(page.getByTestId("column-col-backlog")).toContainText("1 cards");
 });

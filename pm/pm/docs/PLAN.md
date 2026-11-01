@@ -2,7 +2,7 @@
 
 Each part has substeps to check off, tests, and success criteria. Do not start a part until the previous one meets its success criteria. Parts marked "user sign-off" stop for approval.
 
-Status: Parts 1-10 are done.
+Status: Parts 1-14 are done.
 
 ## Key decisions
 
@@ -219,3 +219,46 @@ Tests:
 - Manual: screenshots at 1440x900 with the sidebar closed (5 columns) and open (3 columns, no overflow)
 
 Success criteria: full chat works end to end in the container; AI board changes appear immediately and persist; all tests pass.
+
+## Part 11: Real user management (backend)
+
+Goal: users register and sign in against the backend; the API acts as the signed-in user.
+
+- [x] `users` gets `password_hash` (stdlib `hashlib.scrypt`, random salt); `sessions(token, user_id, created_at)`
+- [x] `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `PUT /api/auth/password`, `DELETE /api/auth/me`. The session is an HttpOnly `session` cookie
+- [x] Every board and chat route requires a session (401 without one)
+- [x] The demo user `user` / `password` is created on startup if missing, so the existing sign-in keeps working
+- [x] Migrate an existing Part 6 database in place (`PRAGMA user_version`), keeping the stored board
+
+Tests: register, duplicate username (409), invalid username or short password (422), login, wrong password (401), logout ends the session, me, change password (wrong current password 403), delete account removes boards and sessions, routes without a session are 401, migration keeps the old board.
+
+Success criteria: all backend tests pass; two users cannot see each other's data.
+
+## Part 12: Multiple boards (backend)
+
+- [x] `boards(id, user_id, name, data, created_at, updated_at)`, many per user
+- [x] `GET /api/boards` (summaries), `POST /api/boards` (new board with the 5 default columns, no cards), `GET|PUT /api/boards/{id}` (board data), `PATCH /api/boards/{id}` (rename), `DELETE /api/boards/{id}`, `POST /api/boards/{id}/chat`
+- [x] A new user gets one seeded board; another user's board is 404
+- [x] Cards gain optional `priority` (`low` | `medium` | `high`) and `dueDate` (`YYYY-MM-DD`); the AI prompt knows them
+
+Tests: create, list, rename, delete, isolation between users, invalid names, priority and date validation, chat on a given board.
+
+## Part 13: Frontend
+
+- [x] Sign-in screen with a Create account mode, backed by the API
+- [x] Sidebar of boards: switch, create, rename, delete
+- [x] Account menu: username, change password, delete account, log out
+- [x] Cards show priority and due date (overdue highlighted); the edit form sets them
+- [x] Header stats: cards, high priority, overdue
+
+Tests: Vitest for each component and `api.ts`; coverage report with `npx vitest run --coverage`.
+
+## Part 14: Integration
+
+- [x] Playwright: each test registers its own user, so tests are isolated
+- [x] Specs: register and sign in, boards CRUD, card priority and due date, persistence, isolation between users, chat (mocked AI)
+- [x] All tests pass against the container; docs updated
+
+Success criteria: all unit, backend and e2e tests pass; the container runs and is ready for the user.
+
+Results: backend 74 tests (99% coverage), frontend unit 76 tests (97% statements), Playwright 25 tests in parallel against the container. The existing `pm-data` database was migrated in place and kept its board.

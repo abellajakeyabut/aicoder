@@ -2,20 +2,32 @@ import { useState, type FormEvent } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
-import type { Card } from "@/lib/kanban";
+import { Pencil, Trash2 } from "lucide-react";
+import { CardMeta } from "@/components/CardMeta";
+import type { Card, Priority } from "@/lib/kanban";
+
+const iconButton =
+  "flex h-7 w-7 items-center justify-center rounded-lg text-[var(--gray-text)] transition hover:bg-[var(--surface)]";
 
 type KanbanCardProps = {
   card: Card;
+  overdue: boolean;
+  locked: boolean;
   onDelete: (cardId: string) => void;
-  onEdit: (cardId: string, title: string, details: string) => void;
+  onEdit: (card: Card) => void;
 };
 
-export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
+const fieldClass =
+  "w-full rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--navy-dark)] outline-none transition focus:border-[var(--primary-blue)]";
+
+export const KanbanCard = ({ card, overdue, locked, onDelete, onEdit }: KanbanCardProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
   const [details, setDetails] = useState(card.details);
+  const [priority, setPriority] = useState(card.priority ?? "");
+  const [dueDate, setDueDate] = useState(card.dueDate ?? "");
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: card.id, disabled: isEditing });
+    useSortable({ id: card.id, disabled: isEditing || locked });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -25,6 +37,8 @@ export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
   const startEditing = () => {
     setTitle(card.title);
     setDetails(card.details);
+    setPriority(card.priority ?? "");
+    setDueDate(card.dueDate ?? "");
     setIsEditing(true);
   };
 
@@ -33,7 +47,13 @@ export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
     if (!title.trim()) {
       return;
     }
-    onEdit(card.id, title.trim(), details.trim());
+    onEdit({
+      id: card.id,
+      title: title.trim(),
+      details: details.trim(),
+      priority: (priority || null) as Priority | null,
+      dueDate: dueDate || null,
+    });
     setIsEditing(false);
   };
 
@@ -42,8 +62,8 @@ export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "rounded-2xl border border-transparent bg-white px-4 py-4 shadow-[0_12px_24px_rgba(3,33,71,0.08)]",
-        "transition-all duration-150",
+        "group cursor-grab rounded-2xl border border-[var(--stroke)] bg-white px-3.5 py-3 shadow-[0_6px_16px_rgba(3,33,71,0.06)]",
+        "transition-all duration-150 hover:border-[var(--primary-blue)]/40 hover:shadow-[0_10px_24px_rgba(3,33,71,0.10)]",
         isDragging && "opacity-60 shadow-[0_18px_32px_rgba(3,33,71,0.16)]"
       )}
       {...(isEditing ? {} : { ...attributes, ...listeners })}
@@ -65,6 +85,26 @@ export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
             rows={3}
             className="w-full resize-none rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--gray-text)] outline-none transition focus:border-[var(--primary-blue)]"
           />
+          <div className="grid grid-cols-2 gap-2">
+            <select
+              value={priority}
+              onChange={(event) => setPriority(event.target.value)}
+              aria-label="Priority"
+              className={fieldClass}
+            >
+              <option value="">No priority</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+              aria-label="Due date"
+              className={fieldClass}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="submit"
@@ -82,34 +122,38 @@ export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
           </div>
         </form>
       ) : (
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h4 className="font-display text-base font-semibold text-[var(--navy-dark)]">
+        <>
+          <div className="flex items-start gap-2">
+            <h4 className="min-w-0 flex-1 font-display text-sm font-semibold leading-5 text-[var(--navy-dark)]">
               {card.title}
             </h4>
-            <p className="mt-2 text-sm leading-6 text-[var(--gray-text)]">
-              {card.details || "No details yet."}
-            </p>
+            {/* Low emphasis until the card is hovered or a button has focus */}
+            <div className="-mr-1 -mt-1 flex shrink-0 gap-0.5 opacity-60 transition group-hover:opacity-100 group-focus-within:opacity-100">
+              <button
+                type="button"
+                onClick={startEditing}
+                className={iconButton + " hover:text-[var(--primary-blue)]"}
+                aria-label={`Edit ${card.title}`}
+                title="Edit"
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(card.id)}
+                className={iconButton + " hover:text-[var(--secondary-purple)]"}
+                aria-label={`Delete ${card.title}`}
+                title="Delete"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={startEditing}
-              className="rounded-full border border-transparent px-2 py-1 text-xs font-semibold text-[var(--primary-blue)] transition hover:border-[var(--stroke)]"
-              aria-label={`Edit ${card.title}`}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(card.id)}
-              className="rounded-full border border-transparent px-2 py-1 text-xs font-semibold text-[var(--gray-text)] transition hover:border-[var(--stroke)] hover:text-[var(--navy-dark)]"
-              aria-label={`Delete ${card.title}`}
-            >
-              Remove
-            </button>
-          </div>
-        </div>
+          <p className="mt-1.5 text-sm leading-5 text-[var(--gray-text)]">
+            {card.details || "No details yet."}
+          </p>
+          <CardMeta card={card} overdue={overdue} />
+        </>
       )}
     </article>
   );

@@ -1,4 +1,4 @@
-import { moveCard, type Column } from "@/lib/kanban";
+import { formatDueDate, isOverdue, moveCard, today, type Column } from "@/lib/kanban";
 
 describe("moveCard", () => {
   const columns: Column[] = [
@@ -30,5 +30,26 @@ describe("moveCard", () => {
     expect(result.map(({ id, title }) => ({ id, title }))).toEqual(
       columns.map(({ id, title }) => ({ id, title }))
     );
+  });
+});
+
+describe("due dates", () => {
+  const card = { id: "c", title: "T", details: "", priority: null, dueDate: "2026-11-07" };
+
+  it("isOverdue compares with the given day", () => {
+    expect(isOverdue(card, "2026-11-08")).toBe(true);
+    expect(isOverdue(card, "2026-11-07")).toBe(false);
+    expect(isOverdue({ ...card, dueDate: null }, "2030-01-01")).toBe(false);
+  });
+
+  it("formatDueDate shows the month and day", () => {
+    expect(formatDueDate("2026-11-07")).toBe("Nov 7");
+  });
+
+  it("today is the local date", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 0, 2, 23, 30));
+    expect(today()).toBe("2026-01-02");
+    vi.useRealTimers();
   });
 });

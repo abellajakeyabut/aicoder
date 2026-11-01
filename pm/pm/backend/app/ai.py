@@ -1,4 +1,5 @@
 import os
+from datetime import date
 
 from openai import OpenAI
 from pydantic import BaseModel, ConfigDict
@@ -9,7 +10,8 @@ MODEL = "openai/gpt-oss-120b"
 
 SYSTEM_PROMPT = """You are the assistant for a Kanban board app. You help the user plan their project and can change their board.
 
-The board is JSON: {"columns": [{"id", "title", "cardIds"}], "cards": [{"id", "title", "details"}]}.
+The board is JSON: {"columns": [{"id", "title", "cardIds"}], "cards": [{"id", "title", "details", "priority", "dueDate"}]}.
+A card's "priority" is "low", "medium", "high" or null; its "dueDate" is "YYYY-MM-DD" or null.
 Each column lists its cards in order in "cardIds". Every card appears in exactly one column, and every id in "cardIds" is a card.
 
 Rules:
@@ -17,7 +19,7 @@ Rules:
 - When the user refers to an existing card ("that card", a title), change that card in place; do not create a new one.
 - Keep existing column and card ids unchanged.
 - The columns are fixed: never add or remove columns, but you may rename them.
-- New cards get a new unique id such as "card-<short random text>"; use "" for details if there are none.
+- New cards get a new unique id such as "card-<short random text>"; use "" for details and null for priority and dueDate if there are none.
 - To move a card, remove its id from one column's "cardIds" and insert it into another.
 - If the user asks for a change, set "board" to the full updated board. Otherwise set "board" to null.
 - Always set "reply" to a short message for the user describing what you did or answering the question.
@@ -58,7 +60,7 @@ def chat(board: Board, message: str, history: list[Message]) -> AIResponse | Non
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         *(m.model_dump() for m in history),
-        {"role": "user", "content": f"Current board:\n{board_json}\n\n{message}"},
+        {"role": "user", "content": f"Today is {date.today().isoformat()}.\nCurrent board:\n{board_json}\n\n{message}"},
     ]
     response = client().chat.completions.parse(
         model=MODEL,

@@ -3,7 +3,10 @@
   "title": "BoardData",
   "description": "A Kanban board, stored as JSON in boards.data. Rules JSON Schema cannot express: column ids are unique; each key in cards equals that card's id; every id in columns[].cardIds exists in cards; each card appears in exactly one column.",
   "type": "object",
-  "required": ["columns", "cards"],
+  "required": [
+    "columns",
+    "cards"
+  ],
   "additionalProperties": false,
   "properties": {
     "columns": {
@@ -11,15 +14,25 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "title", "cardIds"],
+        "required": [
+          "id",
+          "title",
+          "cardIds"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
           "cardIds": {
             "description": "Card ids in display order.",
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           }
         }
       }
@@ -29,12 +42,39 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "required": ["id", "title", "details"],
+        "required": [
+          "id",
+          "title",
+          "details"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "details": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "priority": {
+            "description": "Optional",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              null
+            ]
+          },
+          "dueDate": {
+            "description": "Optional, YYYY-MM-DD",
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
         }
       }
     }
@@ -42,12 +82,32 @@
   "examples": [
     {
       "columns": [
-        { "id": "col-backlog", "title": "Backlog", "cardIds": ["card-1"] },
-        { "id": "col-done", "title": "Done", "cardIds": ["card-2"] }
+        {
+          "id": "col-backlog",
+          "title": "Backlog",
+          "cardIds": [
+            "card-1"
+          ]
+        },
+        {
+          "id": "col-done",
+          "title": "Done",
+          "cardIds": [
+            "card-2"
+          ]
+        }
       ],
       "cards": {
-        "card-1": { "id": "card-1", "title": "Align roadmap themes", "details": "Draft quarterly themes." },
-        "card-2": { "id": "card-2", "title": "Ship marketing page", "details": "Final copy approved." }
+        "card-1": {
+          "id": "card-1",
+          "title": "Align roadmap themes",
+          "details": "Draft quarterly themes."
+        },
+        "card-2": {
+          "id": "card-2",
+          "title": "Ship marketing page",
+          "details": "Final copy approved."
+        }
       }
     }
   ]

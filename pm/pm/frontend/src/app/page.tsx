@@ -1,16 +1,28 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { KanbanBoard } from "@/components/KanbanBoard";
-import { LoginForm } from "@/components/LoginForm";
-import { isLoggedIn, subscribe } from "@/lib/auth";
+import { useEffect, useState } from "react";
+import { AppShell } from "@/components/AppShell";
+import { AuthForm } from "@/components/AuthForm";
+import { getMe, type User } from "@/lib/api";
 
 export default function Home() {
-  // null during static prerender; the real value is read from localStorage on the client
-  const loggedIn = useSyncExternalStore(subscribe, isLoggedIn, () => null);
+  // undefined until the session check returns; null when signed out
+  const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [failed, setFailed] = useState(false);
 
-  if (loggedIn === null) {
+  useEffect(() => {
+    getMe().then(setUser, () => setFailed(true));
+  }, []);
+
+  if (failed) {
+    return (
+      <p role="alert" className="p-12 text-sm font-medium text-[var(--secondary-purple)]">
+        Could not reach the server. Check that it is running, then reload the page.
+      </p>
+    );
+  }
+  if (user === undefined) {
     return null;
   }
-  return loggedIn ? <KanbanBoard /> : <LoginForm />;
+  return user ? <AppShell user={user} onSignOut={() => setUser(null)} /> : <AuthForm onSignedIn={setUser} />;
 }

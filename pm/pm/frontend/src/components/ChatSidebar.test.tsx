@@ -5,7 +5,7 @@ import { initialData } from "@/lib/kanban";
 import { mockApi, savedBoards } from "@/test/mockApi";
 
 const openChat = async () => {
-  render(<KanbanBoard />);
+  render(<KanbanBoard boardId={1} name="My first board" onChange={vi.fn()} />);
   await screen.findAllByTestId(/column-/i);
   await userEvent.click(screen.getByRole("button", { name: "Open AI chat" }));
   return screen.getByRole("complementary", { name: "AI chat" });
@@ -64,7 +64,7 @@ describe("ChatSidebar", () => {
 
   it("shows a board from the AI without saving it again", async () => {
     const board = structuredClone(initialData);
-    board.cards["card-ai"] = { id: "card-ai", title: "Added by AI", details: "" };
+    board.cards["card-ai"] = { id: "card-ai", title: "Added by AI", details: "", priority: null, dueDate: null };
     board.columns[0].cardIds.push("card-ai");
     const fetchMock = mockApi(async () => Response.json({ reply: "Added.", board }));
     const chat = await openChat();

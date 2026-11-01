@@ -4,8 +4,8 @@ const baseURL = process.env.BASE_URL;
 
 export default defineConfig({
   testDir: "./tests",
-  // Tests share one stored board, so they must not run in parallel
-  workers: 1,
+  // Each test signs up its own user, so tests are independent and run in parallel
+  fullyParallel: true,
   timeout: 60_000,
   expect: {
     timeout: 10_000,

@@ -1,5 +1,4 @@
 import copy
-import json
 import os
 from types import SimpleNamespace
 
@@ -8,10 +7,8 @@ from openai import OpenAIError
 from pydantic import ValidationError
 
 from app.ai import AIBoard, AIResponse
-from app.db import DEFAULT_BOARD
 from app.models import Board
-
-DEFAULT = json.loads(DEFAULT_BOARD.read_text())
+from tests.conftest import DEFAULT
 
 live = pytest.mark.skipif(not os.environ.get("OPENROUTER_API_KEY"), reason="OPENROUTER_API_KEY not set")
 
@@ -31,35 +28,35 @@ def mock_ai(monkeypatch, result: AIResponse | None) -> list[dict]:
 
 def board_with_new_card() -> dict:
     board = copy.deepcopy(DEFAULT)
-    board["cards"]["card-new"] = {"id": "card-new", "title": "Test", "details": ""}
+    board["cards"]["card-new"] = {"id": "card-new", "title": "Test", "details": "", "priority": "high", "dueDate": "2026-11-20"}
     board["columns"][0]["cardIds"].append("card-new")
     return board
 
 
-def test_reply_only_leaves_board_unchanged(client, monkeypatch):
+def test_reply_only_leaves_board_unchanged(client, board_id, monkeypatch):
     mock_ai(monkeypatch, AIResponse(reply="There are 5 columns.", board=None))
-    response = client.post("/api/chat", json={"message": "How many columns?"})
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "How many columns?"})
     assert response.status_code == 200
     assert response.json() == {"reply": "There are 5 columns.", "board": None}
-    assert client.get("/api/board").json() == DEFAULT
+    assert client.get(f"/api/boards/{board_id}").json() == DEFAULT
 
 
-def test_board_in_response_is_saved(client, monkeypatch):
+def test_board_in_response_is_saved(client, board_id, monkeypatch):
     expected = board_with_new_card()
     mock_ai(monkeypatch, AIResponse(reply="Added.", board=AIBoard.from_board(Board.model_validate(expected))))
-    response = client.post("/api/chat", json={"message": "Add a card called Test to Backlog"})
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "Add a card called Test to Backlog"})
     assert response.status_code == 200
     assert response.json() == {"reply": "Added.", "board": expected}
-    assert client.get("/api/board").json() == expected
+    assert client.get(f"/api/boards/{board_id}").json() == expected
 
 
-def test_invalid_board_is_not_saved(client, monkeypatch):
+def test_invalid_board_is_not_saved(client, board_id, monkeypatch):
     board = AIBoard.from_board(Board.model_validate(DEFAULT))
     board.columns[0].cardIds.remove("card-1")  # card-1 is in no column
     mock_ai(monkeypatch, AIResponse(reply="Done.", board=board))
-    response = client.post("/api/chat", json={"message": "Remove card-1 from Backlog"})
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "Remove card-1 from Backlog"})
     assert response.status_code == 502
-    assert client.get("/api/board").json() == DEFAULT
+    assert client.get(f"/api/boards/{board_id}").json() == DEFAULT
 
 
 def remove_column(board: dict):
@@ -77,29 +74,29 @@ def reorder_columns(board: dict):
 
 
 @pytest.mark.parametrize("change", [remove_column, add_column, reorder_columns])
-def test_changed_columns_are_not_saved(client, monkeypatch, change):
+def test_changed_columns_are_not_saved(client, board_id, monkeypatch, change):
     board = copy.deepcopy(DEFAULT)
     change(board)
     mock_ai(monkeypatch, AIResponse(reply="Done.", board=AIBoard.from_board(Board.model_validate(board))))
-    response = client.post("/api/chat", json={"message": "Change the columns"})
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "Change the columns"})
     assert response.status_code == 502
-    assert client.get("/api/board").json() == DEFAULT
+    assert client.get(f"/api/boards/{board_id}").json() == DEFAULT
 
 
-def test_renamed_column_is_saved(client, monkeypatch):
+def test_renamed_column_is_saved(client, board_id, monkeypatch):
     board = copy.deepcopy(DEFAULT)
     board["columns"][0]["title"] = "Ideas"
     mock_ai(monkeypatch, AIResponse(reply="Renamed.", board=AIBoard.from_board(Board.model_validate(board))))
-    response = client.post("/api/chat", json={"message": "Rename Backlog to Ideas"})
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "Rename Backlog to Ideas"})
     assert response.status_code == 200
-    assert client.get("/api/board").json() == board
+    assert client.get(f"/api/boards/{board_id}").json() == board
 
 
-def test_empty_ai_response_is_an_error(client, monkeypatch):
+def test_empty_ai_response_is_an_error(client, board_id, monkeypatch):
     mock_ai(monkeypatch, None)
-    response = client.post("/api/chat", json={"message": "How many cards are in Done?"})
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "How many cards are in Done?"})
     assert response.status_code == 502
-    assert client.get("/api/board").json() == DEFAULT
+    assert client.get(f"/api/boards/{board_id}").json() == DEFAULT
 
 
 def failing_ai(monkeypatch, error: Exception):
@@ -118,17 +115,17 @@ def validation_error() -> ValidationError:
 
 
 @pytest.mark.parametrize("error", [OpenAIError("Connection error"), validation_error()])
-def test_ai_failure_is_a_bad_gateway(client, monkeypatch, error):
+def test_ai_failure_is_a_bad_gateway(client, board_id, monkeypatch, error):
     failing_ai(monkeypatch, error)
-    response = client.post("/api/chat", json={"message": "Add a card"})
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "Add a card"})
     assert response.status_code == 502
-    assert client.get("/api/board").json() == DEFAULT
+    assert client.get(f"/api/boards/{board_id}").json() == DEFAULT
 
 
-def test_history_and_board_sent_to_ai(client, monkeypatch):
+def test_history_and_board_sent_to_ai(client, board_id, monkeypatch):
     calls = mock_ai(monkeypatch, AIResponse(reply="Hi.", board=None))
     history = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi, how can I help?"}]
-    client.post("/api/chat", json={"message": "What is in Review?", "history": history})
+    client.post(f"/api/boards/{board_id}/chat", json={"message": "What is in Review?", "history": history})
 
     (call,) = calls
     system, *sent_history, latest = call["messages"]
@@ -141,18 +138,28 @@ def test_history_and_board_sent_to_ai(client, monkeypatch):
 
 
 @live
-def test_live_question_returns_no_board(client):
-    response = client.post("/api/chat", json={"message": "What columns are there?"})
+def test_live_question_returns_no_board(client, board_id):
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "What columns are there?"})
     assert response.status_code == 200
     assert response.json()["board"] is None
     assert response.json()["reply"]
 
 
 @live
-def test_live_add_card(client):
-    response = client.post("/api/chat", json={"message": "Add a card called Test to Backlog"})
+def test_live_add_card(client, board_id):
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "Add a card called Test to Backlog"})
     assert response.status_code == 200
     board = response.json()["board"]
     backlog = next(column for column in board["columns"] if column["id"] == "col-backlog")
     assert "Test" in [board["cards"][card_id]["title"] for card_id in backlog["cardIds"]]
-    assert client.get("/api/board").json() == board
+    assert client.get(f"/api/boards/{board_id}").json() == board
+
+
+def test_chat_changes_only_the_given_board(client, board_id, monkeypatch):
+    other = client.post("/api/boards", json={"name": "Other"}).json()["id"]
+    empty = client.get(f"/api/boards/{other}").json()
+    calls = mock_ai(monkeypatch, AIResponse(reply="Added.", board=AIBoard.from_board(Board.model_validate(board_with_new_card()))))
+    response = client.post(f"/api/boards/{board_id}/chat", json={"message": "Add a card"})
+    assert response.status_code == 200
+    assert client.get(f"/api/boards/{other}").json() == empty
+    assert "Today is " in calls[0]["messages"][-1]["content"]
