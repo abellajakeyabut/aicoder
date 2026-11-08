@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import json
 import os
 import secrets
 import sqlite3
@@ -11,7 +12,7 @@ from app.models import Board, BoardSummary, User
 
 DEFAULT_BOARD = Path(__file__).parent / "default_board.json"
 DEMO_USER, DEMO_PASSWORD = "user", "password"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -87,6 +88,19 @@ def empty_board() -> Board:
     return Board(columns=[c.model_copy(update={"cardIds": []}) for c in board.columns], cards={})
 
 
+def remove_review_column(conn: sqlite3.Connection):
+    """Version 2 drops the Review column; its cards move to the end of In Progress."""
+    for board_id, data in conn.execute("SELECT id, data FROM boards").fetchall():
+        board = json.loads(data)
+        review = next((c for c in board["columns"] if c["id"] == "col-review"), None)
+        if review is None:
+            continue
+        board["columns"].remove(review)
+        progress = next(c for c in board["columns"] if c["id"] == "col-progress")
+        progress["cardIds"] += review["cardIds"]
+        conn.execute("UPDATE boards SET data = ? WHERE id = ?", (json.dumps(board), board_id))
+
+
 def init_db():
     with connect() as conn:
         (version,) = conn.execute("PRAGMA user_version").fetchone()
@@ -96,6 +110,8 @@ def init_db():
             conn.executescript(SCHEMA)
             conn.executescript(COPY_V0)
         conn.executescript(SCHEMA)
+        if version < 2:
+            remove_review_column(conn)
         conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         # The demo account; also gives a migrated Part 6 user (no password yet) the demo password
         demo = conn.execute("SELECT password_hash FROM users WHERE username = ?", (DEMO_USER,)).fetchone()

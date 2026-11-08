@@ -27,8 +27,8 @@ describe("ChatSidebar", () => {
     expect(within(chat).getByRole("status")).toHaveTextContent("Thinking...");
     expect(within(chat).getByRole("button", { name: "Send" })).toBeDisabled();
 
-    answer(Response.json({ reply: "There are 5 columns.", board: null }));
-    expect(await within(chat).findByText("There are 5 columns.")).toBeInTheDocument();
+    answer(Response.json({ reply: "There are 4 columns.", board: null }));
+    expect(await within(chat).findByText("There are 4 columns.")).toBeInTheDocument();
     expect(within(chat).queryByRole("status")).not.toBeInTheDocument();
 
     await ask(chat, "Thanks");
@@ -37,7 +37,7 @@ describe("ChatSidebar", () => {
       message: "Thanks",
       history: [
         { role: "user", content: "How many columns?" },
-        { role: "assistant", content: "There are 5 columns." },
+        { role: "assistant", content: "There are 4 columns." },
       ],
     });
   });

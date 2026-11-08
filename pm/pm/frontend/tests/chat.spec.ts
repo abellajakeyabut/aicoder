@@ -25,7 +25,7 @@ test("the AI adds a card and the board updates without a reload", async ({ page 
 test("the board fits beside the open sidebar", async ({ page }) => {
   await page.getByRole("button", { name: "Open AI chat" }).click();
   await expect(page.getByRole("complementary", { name: "AI chat" })).toBeVisible();
-  await expect(page.locator('[data-testid^="column-"]')).toHaveCount(5);
+  await expect(page.locator('[data-testid^="column-"]')).toHaveCount(4);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 

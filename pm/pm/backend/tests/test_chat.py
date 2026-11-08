@@ -34,10 +34,10 @@ def board_with_new_card() -> dict:
 
 
 def test_reply_only_leaves_board_unchanged(client, board_id, monkeypatch):
-    mock_ai(monkeypatch, AIResponse(reply="There are 5 columns.", board=None))
+    mock_ai(monkeypatch, AIResponse(reply="There are 4 columns.", board=None))
     response = client.post(f"/api/boards/{board_id}/chat", json={"message": "How many columns?"})
     assert response.status_code == 200
-    assert response.json() == {"reply": "There are 5 columns.", "board": None}
+    assert response.json() == {"reply": "There are 4 columns.", "board": None}
     assert client.get(f"/api/boards/{board_id}").json() == DEFAULT
 
 
@@ -60,7 +60,7 @@ def test_invalid_board_is_not_saved(client, board_id, monkeypatch):
 
 
 def remove_column(board: dict):
-    # Move the Done cards to Review so the board is otherwise valid
+    # Move the Done cards to In Progress so the board is otherwise valid
     done = board["columns"].pop()
     board["columns"][-1]["cardIds"] += done["cardIds"]
 
@@ -125,7 +125,7 @@ def test_ai_failure_is_a_bad_gateway(client, board_id, monkeypatch, error):
 def test_history_and_board_sent_to_ai(client, board_id, monkeypatch):
     calls = mock_ai(monkeypatch, AIResponse(reply="Hi.", board=None))
     history = [{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi, how can I help?"}]
-    client.post(f"/api/boards/{board_id}/chat", json={"message": "What is in Review?", "history": history})
+    client.post(f"/api/boards/{board_id}/chat", json={"message": "What is in Done?", "history": history})
 
     (call,) = calls
     system, *sent_history, latest = call["messages"]
@@ -133,7 +133,7 @@ def test_history_and_board_sent_to_ai(client, board_id, monkeypatch):
     assert sent_history == history
     assert latest["role"] == "user"
     assert AIBoard.from_board(Board.model_validate(DEFAULT)).model_dump_json() in latest["content"]
-    assert latest["content"].endswith("What is in Review?")
+    assert latest["content"].endswith("What is in Done?")
     assert call["response_format"] is AIResponse
 
 

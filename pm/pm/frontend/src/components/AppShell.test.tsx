@@ -27,7 +27,7 @@ describe("AppShell", () => {
     const item = within(nav).getByRole("button", { name: /^My first board/ });
     expect(item).toHaveAttribute("aria-current", "page");
     expect(item).toHaveTextContent("8");
-    expect(await screen.findAllByTestId(/column-/)).toHaveLength(5);
+    expect(await screen.findAllByTestId(/column-/)).toHaveLength(4);
   });
 
   it("creates a board and switches to it", async () => {
@@ -35,7 +35,7 @@ describe("AppShell", () => {
     await createBoard(nav, "Launch plan");
     expect(await screen.findByRole("heading", { name: "Launch plan" })).toBeInTheDocument();
     expect(within(nav).getByRole("button", { name: /^Launch plan/ })).toHaveAttribute("aria-current", "page");
-    expect(await screen.findAllByText("Drop a card here")).toHaveLength(5);
+    expect(await screen.findAllByText("Drop a card here")).toHaveLength(4);
   });
 
   it("does not create a board with a blank name, and can cancel", async () => {

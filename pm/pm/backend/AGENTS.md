@@ -20,7 +20,7 @@ FastAPI app, managed with uv (`pyproject.toml`, `uv.lock`). Python 3.14. Databas
   - Another user's board is 404 on every board route
   - Static files mounted at `/` from `STATIC_DIR` (default `backend/static`, gitignored; `/app/static` in Docker, holding the Next.js export). Registered last so `/api` routes win
 - `app/models.py` - Pydantic models. `Card` (optional `priority`: low/medium/high, optional `dueDate`: date), `Column`, `Board` mirror the frontend `BoardData`; extra fields forbidden; `Board` checks unique column ids, card keys match ids, and every card is in exactly one column. Request and response models for auth, boards and chat
-- `app/db.py` - stdlib `sqlite3`, foreign keys on. `init_db()` creates tables, migrates a version 0 database (`PRAGMA user_version`) and ensures the demo user `user` / `password`. Passwords: `hashlib.scrypt` with a random salt. Users, sessions and board functions all take the owner's `user_id`, so queries are scoped to that user. DB path from `DB_PATH` (default `/data/app.db`)
+- `app/db.py` - stdlib `sqlite3`, foreign keys on. `init_db()` creates tables, migrates older databases (`PRAGMA user_version`: version 0 tables, version 2 removes the Review column and moves its cards to In Progress) and ensures the demo user `user` / `password`. Passwords: `hashlib.scrypt` with a random salt. Users, sessions and board functions all take the owner's `user_id`, so queries are scoped to that user. DB path from `DB_PATH` (default `/data/app.db`)
 - `app/ai.py` - OpenRouter through the `openai` SDK, model `openai/gpt-oss-120b`. The client is created per call from `OPENROUTER_API_KEY`, so the app and tests run without a key
   - `chat(board, message, history)` - Structured Outputs via `chat.completions.parse(response_format=AIResponse)`; returns `AIResponse {reply, board: AIBoard | None}`, or None if the model returned empty content
   - `AIBoard` is the board with `cards` as a list (strict Structured Outputs does not allow objects with arbitrary keys); `from_board` / `to_board` convert, and `to_board` runs the `Board` checks
@@ -31,7 +31,7 @@ FastAPI app, managed with uv (`pyproject.toml`, `uv.lock`). Python 3.14. Databas
 - `tests/test_main.py` - health and static index
 - `tests/test_auth.py` - sign in, wrong password, register, duplicates, validation, hashing, logout, change password, delete account, every protected route is 401 without a session
 - `tests/test_boards.py` - db creation and demo user, seeded board, create, rename, delete, save and load, priority and due date, persistence across restarts, isolation between users, invalid boards
-- `tests/test_migration.py` - a Part 6 database is migrated and keeps its board
+- `tests/test_migration.py` - a Part 6 database is migrated and keeps its board; a version 1 board loses the Review column (cards move to In Progress)
 - `tests/test_chat.py` - chat with the AI client mocked (`mock_ai`): reply only, board saved, invalid board not saved, added, removed or reordered columns not saved, renamed column saved, OpenRouter and schema errors are 502, empty response, messages sent, only the given board changes. Live tests (skipped without a key): a question returns no board; adding a card to Backlog
 
 ## Commands

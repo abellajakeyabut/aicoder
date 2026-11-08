@@ -7,7 +7,7 @@ test("creates, switches, renames and deletes boards, and keeps them after a relo
   await nav.getByLabel("New board name").press("Enter");
 
   await expect(page.getByRole("heading", { name: "Launch plan" })).toBeVisible();
-  await expect(page.getByText("Drop a card here")).toHaveCount(5);
+  await expect(page.getByText("Drop a card here")).toHaveCount(4);
 
   const backlog = page.locator('[data-testid^="column-"]').first();
   await backlog.getByRole("button", { name: /add a card/i }).click();

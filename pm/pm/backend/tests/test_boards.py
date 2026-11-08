@@ -37,7 +37,7 @@ def test_demo_user_has_the_seeded_board(client, board_id):
     assert summary["cardCount"] == 8
     board = client.get(f"/api/boards/{board_id}").json()
     assert board == DEFAULT
-    assert len(board["columns"]) == 5
+    assert len(board["columns"]) == 4
 
 
 def test_create_board_has_empty_default_columns(client):
@@ -69,7 +69,7 @@ def test_put_then_get_returns_saved_board(client, board_id):
         "dueDate": "2026-12-01",
     }
     board["columns"][1]["cardIds"].append("card-9")
-    board["columns"][4]["cardIds"].remove("card-8")
+    board["columns"][3]["cardIds"].remove("card-8")
     board["columns"][0]["cardIds"].insert(0, "card-8")
 
     response = client.put(f"/api/boards/{board_id}", json=board)

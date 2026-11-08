@@ -3,7 +3,7 @@ import { expect, test } from "./helpers";
 
 const columnBoxes = async (page: Page) => {
   const columns = page.locator('[data-testid^="column-"]');
-  await expect(columns).toHaveCount(5);
+  await expect(columns).toHaveCount(4);
   return Promise.all((await columns.all()).map(async (column) => (await column.boundingBox())!));
 };
 

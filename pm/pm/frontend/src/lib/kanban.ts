@@ -26,9 +26,8 @@ export const initialData: BoardData = {
     {
       id: "col-progress",
       title: "In Progress",
-      cardIds: ["card-4", "card-5"],
+      cardIds: ["card-4", "card-5", "card-6"],
     },
-    { id: "col-review", title: "Review", cardIds: ["card-6"] },
     { id: "col-done", title: "Done", cardIds: ["card-7", "card-8"] },
   ],
   cards: {

@@ -20,13 +20,7 @@
       "title": "In Progress",
       "cardIds": [
         "card-4",
-        "card-5"
-      ]
-    },
-    {
-      "id": "col-review",
-      "title": "Review",
-      "cardIds": [
+        "card-5",
         "card-6"
       ]
     },

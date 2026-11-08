@@ -7,7 +7,7 @@
 - Accessed with Python's stdlib `sqlite3`. No ORM. Foreign keys are on, so deleting a user deletes their sessions and boards.
 - Each board is stored as one JSON document in the frontend `BoardData` shape (`frontend/src/lib/kanban.ts`). The formal shape is in `board-schema.json`.
 
-## Schema (version 1, `PRAGMA user_version = 1`)
+## Schema (version 2, `PRAGMA user_version = 2`)
 
 ```sql
 CREATE TABLE users (
@@ -51,7 +51,7 @@ Checked by the backend (Pydantic) before saving:
 
 ## Lifecycle
 
-1. App startup: create the db file and tables if missing. A version 0 (Part 6) database, with one board per user and no passwords, is migrated in place: its board is kept and named "My board".
+1. App startup: create the db file and tables if missing. A version 0 (Part 6) database, with one board per user and no passwords, is migrated in place: its board is kept and named "My board". Moving to version 2 removes the Review column (`col-review`) from every saved board and appends its cards to In Progress; nothing else changes.
 2. The demo user `user` / `password` is created on startup if missing (a migrated `user` gets that password).
 3. Registering creates the user and one board, "My first board", seeded from `backend/app/default_board.json`.
-4. New boards get the five default columns and no cards.
+4. New boards get the four default columns and no cards.

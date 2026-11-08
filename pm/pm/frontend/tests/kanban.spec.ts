@@ -1,7 +1,7 @@
 import { dragTo, expect, test } from "./helpers";
 
 test("loads the kanban board", async ({ page }) => {
-  await expect(page.locator('[data-testid^="column-"]')).toHaveCount(5);
+  await expect(page.locator('[data-testid^="column-"]')).toHaveCount(4);
   await expect(page.getByTestId("card-card-1")).toContainText("high priority");
 });
 
@@ -42,8 +42,8 @@ test("marks past due cards as overdue and counts them", async ({ page }) => {
 });
 
 test("moves a card between columns", async ({ page }) => {
-  await dragTo(page, "card-card-1", "column-col-review");
-  await expect(page.getByTestId("column-col-review").getByTestId("card-card-1")).toBeVisible();
+  await dragTo(page, "card-card-1", "column-col-progress");
+  await expect(page.getByTestId("column-col-progress").getByTestId("card-card-1")).toBeVisible();
 });
 
 test("deletes a card", async ({ page }) => {

@@ -21,7 +21,7 @@ describe("KanbanBoard", () => {
   it("shows a loading state, then the board from the API", async () => {
     render(board());
     expect(screen.getByText("Loading board...")).toBeInTheDocument();
-    expect(await screen.findAllByTestId(/column-/i)).toHaveLength(5);
+    expect(await screen.findAllByTestId(/column-/i)).toHaveLength(4);
     expect(screen.getByText("Align roadmap themes")).toBeInTheDocument();
     expect(requests(fetchMock)).toEqual(["GET /api/boards/1"]);
     expect(screen.getByRole("heading", { name: "My first board" })).toBeInTheDocument();
@@ -205,7 +205,7 @@ describe("KanbanBoard", () => {
       fetchMock.mockImplementationOnce(async () => Response.json(data));
       await renderBoard();
 
-      // card-4 (Nov 7, In Progress) and card-6 (Nov 3, Review); card-1 is due Nov 14
+      // card-4 (Nov 7, In Progress) and card-6 (Nov 3, In Progress); card-1 is due Nov 14
       expect(within(screen.getByRole("banner")).getByText("Overdue").nextSibling).toHaveTextContent("2");
       expect(screen.getByTestId("card-card-4")).toHaveTextContent("Overdue, due Nov 7");
       expect(screen.getByTestId("card-card-6")).toHaveTextContent("Overdue, due Nov 3");
