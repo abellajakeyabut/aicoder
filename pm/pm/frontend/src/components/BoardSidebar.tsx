@@ -27,8 +27,7 @@ type BoardSidebarProps = {
   onSignOut: () => void;
 };
 
-const iconButton =
-  "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[var(--gray-text)] transition hover:bg-white hover:text-[var(--navy-dark)]";
+const iconButton = "icon-btn";
 
 // A one-field form, used to create and to rename boards
 const NameForm = ({
@@ -58,7 +57,7 @@ const NameForm = ({
         aria-label={label}
         maxLength={60}
         autoFocus
-        className={clsx(inputClass, "py-1.5")}
+        className={clsx(inputClass, "py-1")}
       />
       <button type="submit" aria-label="Save" title="Save" className={iconButton}>
         <Check size={15} />
@@ -95,16 +94,16 @@ export const BoardSidebar = ({
     <nav
       aria-label="Boards"
       className={clsx(
-        "sticky top-0 flex h-screen shrink-0 flex-col border-r border-[var(--stroke)] bg-white/70 backdrop-blur transition-[width] duration-200",
+        "sticky top-0 z-10 flex h-screen shrink-0 flex-col border-r-4 border-[var(--navy-dark)] bg-[var(--surface-strong)] transition-[width] duration-200 ease-[steps(4,end)]",
         collapsed ? "w-16" : "w-64"
       )}
     >
-      <div className={clsx("flex items-center gap-3 py-5", collapsed ? "flex-col px-2" : "px-5")}>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--navy-dark)] text-[var(--accent-yellow)]">
-          <LayoutGrid size={19} />
+      <div className={clsx("flex items-center gap-3 border-b-4 border-[var(--navy-dark)] py-5", collapsed ? "flex-col px-2" : "px-5")}>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-[var(--accent-yellow)] text-[var(--navy-dark)] shadow-[inset_-4px_-4px_0_var(--accent-yellow-dark),0_0_0_3px_var(--navy-dark)]">
+          <LayoutGrid size={18} />
         </div>
         {!collapsed && (
-          <p className="truncate font-display text-lg font-semibold text-[var(--navy-dark)]">Kanban Studio</p>
+          <p className="font-display text-[10px] leading-relaxed text-[var(--navy-dark)]">Kanban Studio</p>
         )}
         <button
           type="button"
@@ -118,9 +117,9 @@ export const BoardSidebar = ({
         </button>
       </div>
 
-      <div className={clsx("flex items-center pb-2 pt-3", collapsed ? "justify-center" : "justify-between px-5")}>
+      <div className={clsx("flex items-center pb-3 pt-4", collapsed ? "justify-center" : "justify-between px-5")}>
         {!collapsed && (
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">Boards</h2>
+          <h2 className="bg-[var(--navy-dark)] px-2 py-1 font-display text-[8px] text-[var(--surface)]">Boards</h2>
         )}
         <button type="button" onClick={startCreate} aria-label="New board" title="New board" className={iconButton}>
           <Plus size={16} />
@@ -138,10 +137,10 @@ export const BoardSidebar = ({
                 aria-label={board.name}
                 title={board.name}
                 className={clsx(
-                  "flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold uppercase transition",
+                  "flex h-9 w-9 cursor-pointer items-center justify-center border-[3px] font-display text-[10px] uppercase",
                   board.id === activeId
-                    ? "bg-[var(--surface)] text-[var(--navy-dark)] ring-2 ring-[var(--accent-yellow)]"
-                    : "text-[var(--gray-text)] hover:bg-[var(--surface)]/60"
+                    ? "border-[var(--navy-dark)] bg-[var(--accent-yellow)] text-[var(--navy-dark)]"
+                    : "border-transparent text-[var(--ink-soft)] hover:border-[var(--navy-dark)] hover:bg-[var(--surface-2)]"
                 )}
               >
                 {board.name[0]}
@@ -159,33 +158,39 @@ export const BoardSidebar = ({
             ) : (
               <div
                 className={clsx(
-                  "group flex items-center gap-1 rounded-xl pr-1 transition",
-                  board.id === activeId ? "bg-[var(--surface)]" : "hover:bg-[var(--surface)]/60"
+                  "group flex items-center gap-1 border-[3px] pr-1",
+                  board.id === activeId
+                    ? "border-[var(--navy-dark)] bg-[var(--accent-yellow)] shadow-[3px_3px_0_var(--shadow)]"
+                    : "border-transparent hover:bg-[var(--surface-2)]"
                 )}
               >
                 <button
                   type="button"
                   onClick={() => onSelect(board.id)}
                   aria-current={board.id === activeId ? "page" : undefined}
-                  className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 px-2 py-1.5 text-left"
                 >
+                  {/* Menu cursor, like the nav on the reference site */}
                   <span
+                    aria-hidden
                     className={clsx(
-                      "h-2 w-2 shrink-0 rounded-full",
-                      board.id === activeId ? "bg-[var(--accent-yellow)]" : "bg-[var(--stroke)]"
+                      "w-2.5 shrink-0 text-[9px] leading-none text-[var(--navy-dark)]",
+                      board.id === activeId ? "blink" : "invisible"
                     )}
-                  />
+                  >
+                    &#9654;
+                  </span>
                   <span
                     className={clsx(
                       "truncate text-sm",
-                      board.id === activeId ? "font-semibold text-[var(--navy-dark)]" : "text-[var(--gray-text)]"
+                      board.id === activeId ? "font-bold text-[var(--navy-dark)]" : "font-medium text-[var(--ink-soft)]"
                     )}
                   >
                     {board.name}
                   </span>
-                  <span className="ml-auto text-xs text-[var(--gray-text)]">{board.cardCount}</span>
+                  <span className="ml-auto font-mono text-xs font-bold text-[var(--navy-dark)]">{board.cardCount}</span>
                 </button>
-                <div className="flex opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                <div className="flex opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
                   <button
                     type="button"
                     onClick={() => setRenamingId(board.id)}
@@ -200,7 +205,7 @@ export const BoardSidebar = ({
                     onClick={() => onDelete(board)}
                     aria-label={`Delete ${board.name}`}
                     title="Delete"
-                    className={clsx(iconButton, "hover:text-[var(--secondary-purple)]")}
+                    className="icon-btn icon-btn-danger"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -226,18 +231,21 @@ export const BoardSidebar = ({
 
       <div
         className={clsx(
-          "flex items-center gap-2 border-t border-[var(--stroke)] py-4",
+          "flex items-center gap-2 border-t-4 border-[var(--navy-dark)] bg-[var(--sky-pale)] py-4",
           collapsed ? "flex-col px-2" : "px-4"
         )}
       >
         <div
           title={collapsed ? user.username : undefined}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--primary-blue)] text-sm font-semibold uppercase text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--coral)] font-display text-[10px] uppercase text-white shadow-[inset_-3px_-3px_0_#00000026,0_0_0_3px_var(--navy-dark)]"
         >
           {user.username[0]}
         </div>
         {!collapsed && (
-          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--navy-dark)]">{user.username}</p>
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[10px] font-bold uppercase text-[var(--gray-text)]">Player 1</p>
+            <p className="truncate text-sm font-bold text-[var(--navy-dark)]">{user.username}</p>
+          </div>
         )}
         <button type="button" onClick={onOpenAccount} aria-label="Account settings" title="Account settings" className={iconButton}>
           <Settings size={16} />

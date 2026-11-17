@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Press_Start_2P, Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const displayFont = Space_Grotesk({
+const displayFont = Press_Start_2P({
   variable: "--font-display",
+  weight: "400",
   subsets: ["latin"],
 });
 
-const bodyFont = Manrope({
+const bodyFont = Space_Grotesk({
   variable: "--font-body",
+  subsets: ["latin"],
+});
+
+const monoFont = Space_Mono({
+  variable: "--font-mono",
+  weight: ["400", "700"],
   subsets: ["latin"],
 });
 
@@ -24,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${displayFont.variable} ${bodyFont.variable}`}>
+      <body className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
         {children}
       </body>
     </html>

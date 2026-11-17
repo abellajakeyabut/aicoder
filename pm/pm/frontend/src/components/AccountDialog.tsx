@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import clsx from "clsx";
 import { X } from "lucide-react";
 import { ApiError, changePassword, deleteAccount, type User } from "@/lib/api";
-import { errorClass, inputClass, labelClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
+import { dangerButtonClass, errorClass, inputClass, labelClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui";
 
 type AccountDialogProps = {
   user: User;
@@ -47,18 +47,18 @@ export const AccountDialog = ({ user, onClose, onDeleted }: AccountDialogProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--navy-dark)]/30 px-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1d1b2e99] px-6">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="account-title"
         onKeyDown={(event) => event.key === "Escape" && onClose()}
-        className="w-full max-w-md rounded-[28px] border border-[var(--stroke)] bg-white p-7 shadow-[var(--shadow)]"
+        className="px-box w-full max-w-md p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--gray-text)]">Account</p>
-            <h2 id="account-title" className="mt-1 font-display text-2xl font-semibold text-[var(--navy-dark)]">
+            <p className="inline-block bg-[var(--coral)] px-2 py-1 font-display text-[8px] text-white">Account</p>
+            <h2 id="account-title" className="mt-3 truncate text-2xl font-bold text-[var(--navy-dark)]">
               {user.username}
             </h2>
           </div>
@@ -66,14 +66,14 @@ export const AccountDialog = ({ user, onClose, onDeleted }: AccountDialogProps) 
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--gray-text)] transition hover:bg-[var(--surface)] hover:text-[var(--navy-dark)]"
+            className="icon-btn h-9 w-9"
           >
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handlePassword} className="mt-6 space-y-4">
-          <h3 className="font-display text-base font-semibold text-[var(--navy-dark)]">Change password</h3>
+          <h3 className="font-display text-[10px] text-[var(--navy-dark)]">Change password</h3>
           <label className={labelClass}>
             Current password
             <input
@@ -100,7 +100,7 @@ export const AccountDialog = ({ user, onClose, onDeleted }: AccountDialogProps) 
           {message && (
             <p
               role={message.error ? "alert" : "status"}
-              className={message.error ? errorClass : "text-sm font-medium text-[var(--primary-blue)]"}
+              className={message.error ? errorClass : "border-l-4 border-[var(--leaf-dark)] bg-[#5fd9a326] px-3 py-2 text-sm font-semibold text-[var(--leaf-dark)]"}
             >
               {message.text}
             </p>
@@ -110,12 +110,12 @@ export const AccountDialog = ({ user, onClose, onDeleted }: AccountDialogProps) 
           </button>
         </form>
 
-        <div className="mt-7 border-t border-[var(--stroke)] pt-5">
-          <h3 className="font-display text-base font-semibold text-[var(--navy-dark)]">Delete account</h3>
-          <p className="mt-1 text-sm text-[var(--gray-text)]">This removes your account and all of your boards.</p>
+        <div className="mt-7 border-t-4 border-dotted border-[var(--navy-dark)] pt-5">
+          <h3 className="font-display text-[10px] text-[var(--navy-dark)]">Delete account</h3>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">This removes your account and all of your boards.</p>
           {confirmingDelete ? (
             <div className="mt-3 flex gap-2">
-              <button type="button" onClick={handleDelete} className={primaryButtonClass}>
+              <button type="button" onClick={handleDelete} className={dangerButtonClass}>
                 Yes, delete everything
               </button>
               <button type="button" onClick={() => setConfirmingDelete(false)} className={secondaryButtonClass}>

@@ -6,29 +6,34 @@ import { isOverdue, type Card, type Column } from "@/lib/kanban";
 import { KanbanCard } from "@/components/KanbanCard";
 import { NewCardForm } from "@/components/NewCardForm";
 
+const stageColors = ["bg-[var(--sky)]", "bg-[var(--accent-yellow)]", "bg-[var(--secondary-purple)]", "bg-[var(--coral)]"];
+
 type KanbanColumnProps = {
   column: Column;
   cards: Card[];
+  // 1-based position, shown as "Stage 01"
+  stage: number;
   finished: boolean;
   // While the AI works, cards can't be dragged
   locked: boolean;
   today: string;
   onRename: (columnId: string, title: string) => void;
-  onAddCard: (columnId: string, title: string, details: string) => void;
-  onDeleteCard: (columnId: string, cardId: string) => void;
-  onEditCard: (card: Card) => void;
+  onAddCard: (columnId: string, title: string, summary: string) => void;
+  onDeleteCard: (cardId: string) => void;
+  onOpenCard: (cardId: string, editing: boolean) => void;
 };
 
 export const KanbanColumn = ({
   column,
   cards,
+  stage,
   finished,
   locked,
   today,
   onRename,
   onAddCard,
   onDeleteCard,
-  onEditCard,
+  onOpenCard,
 }: KanbanColumnProps) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const titleOnFocus = useRef(column.title);
@@ -37,29 +42,38 @@ export const KanbanColumn = ({
     <section
       ref={setNodeRef}
       className={clsx(
-        "flex min-h-[480px] min-w-0 flex-col rounded-3xl border border-[var(--stroke)] bg-[var(--surface-strong)] p-3 shadow-[0_8px_24px_rgba(3,33,71,0.07)] transition",
-        isOver && "ring-2 ring-[var(--accent-yellow)]"
+        "px-box flex min-h-[480px] min-w-0 flex-col",
+        isOver && "!bg-[var(--surface-2)]"
       )}
       data-testid={`column-${column.id}`}
     >
-      <div className="border-b-2 border-[var(--accent-yellow)] px-1 pb-2">
-        <div className="flex items-center gap-2">
+      {/* Colored cap like a level card; the finished column is green */}
+      <div
+        className={clsx(
+          "border-b-4 border-[var(--navy-dark)] px-3 pb-3 pt-2.5",
+          finished ? "bg-[var(--mint)]" : stageColors[(stage - 1) % stageColors.length]
+        )}
+      >
+        <p className="inline-block bg-[var(--navy-dark)] px-1.5 py-1 font-display text-[7px] text-[var(--surface)]">
+          Stage {String(stage).padStart(2, "0")}
+        </p>
+        <div className="mt-2 flex items-center gap-2">
           <input
             value={column.title}
             onChange={(event) => onRename(column.id, event.target.value)}
             onFocus={() => (titleOnFocus.current = column.title)}
             // A column can't be left without a name: restore the title it had before editing
             onBlur={() => !column.title.trim() && onRename(column.id, titleOnFocus.current)}
-            className="min-w-0 flex-1 rounded-lg bg-transparent px-1 py-1 font-display text-base font-semibold text-[var(--navy-dark)] outline-none transition hover:bg-[var(--surface)] focus:bg-[var(--surface)]"
+            className="min-w-0 flex-1 border-2 border-transparent bg-transparent px-1 py-1 font-display text-[10px] text-[var(--navy-dark)] outline-none hover:border-dashed hover:border-[var(--navy-dark)] focus:border-solid focus:border-[var(--navy-dark)] focus:bg-white"
             aria-label="Column title"
           />
-          <span className="rounded-full bg-[var(--surface)] px-2.5 py-0.5 text-xs font-semibold text-[var(--gray-text)]">
+          <span className="chip bg-white">
             {cards.length}
             <span className="sr-only"> cards</span>
           </span>
         </div>
       </div>
-      <div className="mt-3 flex flex-col gap-2">
+      <div className="flex flex-1 flex-col gap-3 p-3">
         <SortableContext items={column.cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
             <KanbanCard
@@ -67,18 +81,18 @@ export const KanbanColumn = ({
               card={card}
               overdue={!finished && isOverdue(card, today)}
               locked={locked}
-              onDelete={(cardId) => onDeleteCard(column.id, cardId)}
-              onEdit={onEditCard}
+              onDelete={onDeleteCard}
+              onOpen={onOpenCard}
             />
           ))}
         </SortableContext>
         {cards.length === 0 && (
-          <div className="flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--stroke)] px-3 py-6 text-center text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
+          <div className="flex items-center justify-center border-[3px] border-dashed border-[var(--gray-text)] bg-[repeating-linear-gradient(-45deg,#f1eef8_0_10px,#e6e1f2_10px_20px)] px-3 py-6 text-center font-display text-[8px] leading-relaxed text-[var(--ink-soft)]">
             Drop a card here
           </div>
         )}
         <NewCardForm
-          onAdd={(title, details) => onAddCard(column.id, title, details)}
+          onAdd={(title, summary) => onAddCard(column.id, title, summary)}
         />
       </div>
     </section>

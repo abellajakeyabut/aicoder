@@ -64,7 +64,7 @@ describe("ChatSidebar", () => {
 
   it("shows a board from the AI without saving it again", async () => {
     const board = structuredClone(initialData);
-    board.cards["card-ai"] = { id: "card-ai", title: "Added by AI", details: "", priority: null, dueDate: null };
+    board.cards["card-ai"] = { id: "card-ai", title: "Added by AI", summary: "", details: "", priority: null, dueDate: null };
     board.columns[0].cardIds.push("card-ai");
     const fetchMock = mockApi(async () => Response.json({ reply: "Added.", board }));
     const chat = await openChat();

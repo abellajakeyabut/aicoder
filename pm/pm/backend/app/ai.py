@@ -10,7 +10,8 @@ MODEL = "openai/gpt-oss-120b"
 
 SYSTEM_PROMPT = """You are the assistant for a Kanban board app. You help the user plan their project and can change their board.
 
-The board is JSON: {"columns": [{"id", "title", "cardIds"}], "cards": [{"id", "title", "details", "priority", "dueDate"}]}.
+The board is JSON: {"columns": [{"id", "title", "cardIds"}], "cards": [{"id", "title", "summary", "details", "priority", "dueDate"}]}.
+A card's "summary" is one short sentence shown on the board. Its "details" is longer free text shown when the card is opened: paragraphs separated by blank lines, and bullet lines starting with "- ".
 A card's "priority" is "low", "medium", "high" or null; its "dueDate" is "YYYY-MM-DD" or null.
 Each column lists its cards in order in "cardIds". Every card appears in exactly one column, and every id in "cardIds" is a card.
 
@@ -19,7 +20,7 @@ Rules:
 - When the user refers to an existing card ("that card", a title), change that card in place; do not create a new one.
 - Keep existing column and card ids unchanged.
 - The columns are fixed: never add or remove columns, but you may rename them.
-- New cards get a new unique id such as "card-<short random text>"; use "" for details and null for priority and dueDate if there are none.
+- New cards get a new unique id such as "card-<short random text>"; use "" for summary and details and null for priority and dueDate if there are none.
 - To move a card, remove its id from one column's "cardIds" and insert it into another.
 - If the user asks for a change, set "board" to the full updated board. Otherwise set "board" to null.
 - Always set "reply" to a short message for the user describing what you did or answering the question.

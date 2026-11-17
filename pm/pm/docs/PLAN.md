@@ -24,7 +24,7 @@ Frontend
 - Sign-in is frontend-only: the browser checks `user`/`password` and stores localStorage `pm-auth`. `page.tsx` reads it with `useSyncExternalStore` (null during prerender, so nothing renders until the client knows). The backend API always acts as the fixed user `user` and is unauthenticated: anyone who can reach port 8000 can read and replace the board. Real sign-in must add a backend check before the app is exposed beyond localhost.
 - The board loads on mount. Every change sets state and PUTs the whole board. Saves are chained so they reach the backend in order, because column renames save on every keystroke. A failed save doesn't block later ones.
 - Cards are edited with an Edit button that opens an inline form. While editing, dnd-kit attributes and listeners are not applied (otherwise the form sits inside a disabled `role="button"`).
-- Styling follows the existing demo: the AGENTS.md colors as CSS variables, rounded white cards on a light surface, soft navy shadows, Space Grotesk and Manrope fonts. New UI (login, chat) reuses it.
+- Styling is a 2D game look after jakeyabutabella.com: cream grid paper, 3-4px ink outlines, hard offset shadows, Press Start 2P / Space Grotesk / Space Mono. The AGENTS.md color roles keep their CSS variable names but use the site palette (sun yellow, blue, grape purple, ink navy, muted gray) plus coral, mint and sky.
 
 AI
 - OpenRouter through the `openai` Python SDK, model `openai/gpt-oss-120b`. `app/ai.py` creates the client per call, so the app starts without a key.
@@ -262,3 +262,17 @@ Tests: Vitest for each component and `api.ts`; coverage report with `npx vitest 
 Success criteria: all unit, backend and e2e tests pass; the container runs and is ready for the user.
 
 Results: backend 74 tests (99% coverage), frontend unit 76 tests (97% statements), Playwright 25 tests in parallel against the container. The existing `pm-data` database was migrated in place and kept its board.
+
+## Part 15: Card summary and details
+
+Goal: the board shows a short summary per card; opening a card shows a larger dialog with a free text Details field (paragraphs or bullets).
+
+- [x] `Card.details` (short text) renamed to `summary`; new `details` (long free text, `""` by default) in the frontend and backend models, the seed board and the AI prompt
+- [x] Database version 3 migrates stored boards: each card's `details` becomes `summary`, `details` starts empty
+- [x] `CardDialog`: clicking a card opens the view, the Edit icon opens the form; Title, Summary, Details, Priority, Due date; Escape, Close or backdrop closes
+- [x] `CardDetails` renders blank-line paragraphs and `- ` bullet lists
+- [x] Board cards show the summary and a badge when there are details
+
+Tests: backend migration, model and save tests; unit tests for the dialog (view, keyboard open, edit, cancel, delete, details rendering); Playwright for the dialog, details persisting across a reload, drag not opening the dialog.
+
+Results: backend 77 tests, frontend unit 82 tests (98% statements), Playwright 28 tests against the container. The `pm-data` database was migrated in place.

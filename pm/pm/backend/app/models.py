@@ -11,8 +11,10 @@ class Card(BaseModel):
 
     id: str
     title: str
-    details: str
+    # Short text shown on the board; details is the long free text shown in the card dialog
+    summary: str
     # Optional so boards saved before these fields existed still load
+    details: str = ""
     priority: Priority | None = None
     dueDate: date | None = None
 

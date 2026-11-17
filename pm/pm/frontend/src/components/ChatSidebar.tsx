@@ -5,6 +5,7 @@ import clsx from "clsx";
 import { SendHorizontal, Sparkles, X } from "lucide-react";
 import { sendChat, type ChatMessage } from "@/lib/api";
 import type { BoardData } from "@/lib/kanban";
+import { errorClass } from "@/components/ui";
 
 type ChatSidebarProps = {
   boardId: number;
@@ -73,16 +74,16 @@ export const ChatSidebar = ({ boardId, open, onClose, loading, onLoadingChange, 
   return (
     <aside
       aria-label="AI chat"
-      className="sticky top-0 flex h-screen w-[340px] shrink-0 flex-col border-l border-[var(--stroke)] bg-white/90 shadow-[var(--shadow)] backdrop-blur"
+      className="sticky top-0 flex h-screen w-[340px] shrink-0 flex-col border-l-4 border-[var(--navy-dark)] bg-[var(--sky-pale)]"
     >
-      <div className="flex items-center justify-between gap-4 border-b border-[var(--stroke)] px-5 py-4">
+      <div className="flex items-center justify-between gap-4 border-b-4 border-[var(--navy-dark)] bg-white px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--navy-dark)] text-[var(--accent-yellow)]">
+          <div className="flex h-9 w-9 items-center justify-center bg-[var(--secondary-purple)] text-white shadow-[inset_-3px_-3px_0_#00000026,0_0_0_3px_var(--navy-dark)]">
             <Sparkles size={17} />
           </div>
           <div>
-            <h2 className="font-display text-lg font-semibold leading-tight text-[var(--navy-dark)]">Board chat</h2>
-            <p className="text-xs text-[var(--gray-text)]">AI assistant</p>
+            <h2 className="font-display text-[11px] leading-relaxed text-[var(--navy-dark)]">Board chat</h2>
+            <p className="font-mono text-[11px] font-bold uppercase text-[var(--ink-soft)]">AI assistant</p>
           </div>
         </div>
         <button
@@ -90,14 +91,14 @@ export const ChatSidebar = ({ boardId, open, onClose, loading, onLoadingChange, 
           onClick={onClose}
           aria-label="Close chat"
           title="Close chat"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--gray-text)] transition hover:bg-[var(--surface)] hover:text-[var(--navy-dark)]"
+          className="icon-btn h-9 w-9"
         >
           <X size={18} />
         </button>
       </div>
-      <div ref={listRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-5">
+      <div ref={listRef} className="flex flex-1 flex-col gap-4 overflow-y-auto p-5">
         {messages.length === 0 && (
-          <p className="text-sm leading-6 text-[var(--gray-text)]">
+          <p className="border-[3px] border-[var(--navy-dark)] bg-white p-4 text-sm leading-6 text-[var(--ink-soft)] shadow-[4px_4px_0_var(--shadow)]">
             Ask me to add, edit or move cards, or ask anything about the board.
           </p>
         )}
@@ -105,28 +106,26 @@ export const ChatSidebar = ({ boardId, open, onClose, loading, onLoadingChange, 
           <div
             key={index}
             className={clsx(
-              "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6",
-              message.role === "user"
-                ? "self-end rounded-br-md bg-[var(--primary-blue)] text-white"
-                : "self-start rounded-bl-md border border-[var(--stroke)] bg-[var(--surface)] text-[var(--navy-dark)]"
+              "max-w-[85%] whitespace-pre-wrap border-[3px] border-[var(--navy-dark)] px-3.5 py-2.5 text-sm leading-6 text-[var(--navy-dark)] shadow-[4px_4px_0_var(--shadow)]",
+              message.role === "user" ? "self-end bg-[var(--accent-yellow)]" : "self-start bg-white"
             )}
           >
             {message.content}
           </div>
         ))}
         {loading && (
-          <p role="status" className="self-start text-xs font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
+          <p role="status" className="blink self-start font-display text-[9px] text-[var(--ink-soft)]">
             Thinking...
           </p>
         )}
         {error && (
-          <p role="alert" className="text-sm font-medium text-[var(--secondary-purple)]">
+          <p role="alert" className={errorClass}>
             Something went wrong. Please try again.
           </p>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 border-t border-[var(--stroke)] p-5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4 border-t-4 border-[var(--navy-dark)] bg-white p-5">
         <textarea
           value={input}
           onChange={(event) => setInput(event.target.value)}
@@ -134,12 +133,12 @@ export const ChatSidebar = ({ boardId, open, onClose, loading, onLoadingChange, 
           aria-label="Message"
           placeholder="Ask the AI to update your board..."
           rows={3}
-          className="w-full resize-none rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--navy-dark)] outline-none transition focus:border-[var(--primary-blue)]"
+          className="field resize-none"
         />
         <button
           type="submit"
           disabled={loading || !input.trim()}
-          className="flex items-center justify-center gap-2 rounded-full bg-[var(--secondary-purple)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn btn-primary"
         >
           <SendHorizontal size={15} />
           Send

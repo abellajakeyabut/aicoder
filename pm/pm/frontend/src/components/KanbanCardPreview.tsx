@@ -6,12 +6,12 @@ type KanbanCardPreviewProps = {
 };
 
 export const KanbanCardPreview = ({ card }: KanbanCardPreviewProps) => (
-  <article className="cursor-grabbing rotate-2 rounded-2xl border border-[var(--primary-blue)]/40 bg-white px-3.5 py-3 shadow-[0_18px_32px_rgba(3,33,71,0.16)]">
-    <h4 className="font-display text-sm font-semibold leading-5 text-[var(--navy-dark)]">
+  <article className="cursor-grabbing rotate-2 border-[3px] border-[var(--navy-dark)] bg-[var(--accent-yellow)] px-3 py-2.5 shadow-[8px_8px_0_var(--shadow)]">
+    <h4 className="text-sm font-bold leading-5 text-[var(--navy-dark)]">
       {card.title}
     </h4>
-    <p className="mt-1.5 text-sm leading-5 text-[var(--gray-text)]">
-      {card.details || "No details yet."}
+    <p className="mt-1 line-clamp-3 text-sm leading-5 text-[var(--ink-soft)]">
+      {card.summary || "No summary yet."}
     </p>
     <CardMeta card={card} overdue={false} />
   </article>

@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Plus } from "lucide-react";
 
-const initialFormState = { title: "", details: "" };
+const initialFormState = { title: "", summary: "" };
 
 type NewCardFormProps = {
-  onAdd: (title: string, details: string) => void;
+  onAdd: (title: string, summary: string) => void;
 };
 
 export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
@@ -16,7 +16,7 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
     if (!formState.title.trim()) {
       return;
     }
-    onAdd(formState.title.trim(), formState.details.trim());
+    onAdd(formState.title.trim(), formState.summary.trim());
     setFormState(initialFormState);
     setIsOpen(false);
   };
@@ -31,22 +31,22 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
               setFormState((prev) => ({ ...prev, title: event.target.value }))
             }
             placeholder="Card title"
-            className="w-full rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-medium text-[var(--navy-dark)] outline-none transition focus:border-[var(--primary-blue)]"
+            className="field"
             required
           />
           <textarea
-            value={formState.details}
+            value={formState.summary}
             onChange={(event) =>
-              setFormState((prev) => ({ ...prev, details: event.target.value }))
+              setFormState((prev) => ({ ...prev, summary: event.target.value }))
             }
-            placeholder="Details"
-            rows={3}
-            className="w-full resize-none rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--gray-text)] outline-none transition focus:border-[var(--primary-blue)]"
+            placeholder="Summary"
+            rows={2}
+            className="field resize-none"
           />
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="submit"
-              className="rounded-full bg-[var(--secondary-purple)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110"
+              className="btn btn-primary"
             >
               Add card
             </button>
@@ -56,7 +56,7 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
                 setIsOpen(false);
                 setFormState(initialFormState);
               }}
-              className="rounded-full border border-[var(--stroke)] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
+              className="btn"
             >
               Cancel
             </button>
@@ -66,7 +66,7 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--primary-blue)] transition hover:bg-[var(--surface)]"
+          className="flex w-full cursor-pointer items-center justify-center gap-1.5 border-[3px] border-dashed border-[var(--navy-dark)] px-3 py-2 font-mono text-xs font-bold uppercase text-[var(--navy-dark)] hover:border-solid hover:bg-[var(--accent-yellow)]"
         >
           <Plus size={15} />
           Add a card

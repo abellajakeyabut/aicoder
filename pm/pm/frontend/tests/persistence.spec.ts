@@ -10,9 +10,11 @@ test("keeps renames, new cards, edits and moves after a reload", async ({ page }
 
   const card = page.getByTestId("card-card-2");
   await card.getByRole("button", { name: "Edit Gather customer signals" }).click();
-  await card.getByLabel("Edit title").fill("Persisted edit");
-  await card.getByLabel("Priority").selectOption("low");
-  await card.getByRole("button", { name: "Save" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Persisted edit");
+  await dialog.getByLabel("Priority").selectOption("low");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await dialog.getByRole("button", { name: "Close" }).click();
 
   await dragTo(page, "card-card-3", "column-col-done");
 

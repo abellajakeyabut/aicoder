@@ -12,7 +12,7 @@ from app.models import Board, BoardSummary, User
 
 DEFAULT_BOARD = Path(__file__).parent / "default_board.json"
 DEMO_USER, DEMO_PASSWORD = "user", "password"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -101,6 +101,16 @@ def remove_review_column(conn: sqlite3.Connection):
         conn.execute("UPDATE boards SET data = ? WHERE id = ?", (json.dumps(board), board_id))
 
 
+def add_card_summary(conn: sqlite3.Connection):
+    """Version 3: the short card text becomes summary; details is now the long free text."""
+    for board_id, data in conn.execute("SELECT id, data FROM boards").fetchall():
+        board = json.loads(data)
+        for card in board["cards"].values():
+            card["summary"] = card.pop("details")
+            card["details"] = ""
+        conn.execute("UPDATE boards SET data = ? WHERE id = ?", (json.dumps(board), board_id))
+
+
 def init_db():
     with connect() as conn:
         (version,) = conn.execute("PRAGMA user_version").fetchone()
@@ -112,6 +122,8 @@ def init_db():
         conn.executescript(SCHEMA)
         if version < 2:
             remove_review_column(conn)
+        if version < 3:
+            add_card_summary(conn)
         conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         # The demo account; also gives a migrated Part 6 user (no password yet) the demo password
         demo = conn.execute("SELECT password_hash FROM users WHERE username = ?", (DEMO_USER,)).fetchone()

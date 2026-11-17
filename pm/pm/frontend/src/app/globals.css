@@ -1,15 +1,27 @@
 @import "tailwindcss";
 
+/* 2D game look, after jakeyabutabella.com: cream grid paper, ink outlines, hard pixel shadows */
 :root {
-  --accent-yellow: #ecad0a;
-  --primary-blue: #209dd7;
-  --secondary-purple: #753991;
-  --navy-dark: #032147;
-  --gray-text: #888888;
-  --surface: #f7f8fb;
+  --accent-yellow: #ffd23f;
+  --accent-yellow-dark: #e09a12;
+  --primary-blue: #3f7cf0;
+  --secondary-purple: #9b7bff;
+  --navy-dark: #1d1b2e;
+  --gray-text: #7a7590;
+  --ink-soft: #4a4660;
+  --coral: #ff6b6b;
+  --mint: #5fd9a3;
+  --sky: #8fd3ff;
+  --sky-pale: #eaf6ff;
+  --leaf: #57c26b;
+  --leaf-dark: #2f8f47;
+  --dirt: #c98a4b;
+  --surface: #fff8e7;
+  --surface-2: #fdf0cf;
   --surface-strong: #ffffff;
-  --stroke: rgba(3, 33, 71, 0.08);
-  --shadow: 0 18px 40px rgba(3, 33, 71, 0.12);
+  --grid: #1d1b2e09;
+  --shadow: #1d1b2e2e;
+  --px: 4px;
 }
 
 @theme inline {
@@ -23,17 +35,205 @@
 }
 
 body {
-  background: var(--surface);
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
   color: var(--navy-dark);
-  font-family: var(--font-body), "Segoe UI", sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
   margin: 0;
 }
 
-.font-display {
-  font-family: var(--font-display), "Segoe UI", sans-serif;
+::selection {
+  background: var(--accent-yellow);
+  color: var(--navy-dark);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(3, 33, 71, 0.18) transparent;
+  scrollbar-color: var(--navy-dark) transparent;
+}
+
+@layer components {
+  .font-display {
+    font-family: var(--font-display), monospace;
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .font-mono {
+    font-family: var(--font-mono), monospace;
+  }
+
+  /* A panel with a stepped 4px ink outline (corners left open, like a sprite) and a hard drop shadow */
+  .px-box {
+    background: var(--surface-strong);
+    box-shadow:
+      0 calc(var(--px) * -1) 0 0 var(--navy-dark),
+      0 var(--px) 0 0 var(--navy-dark),
+      calc(var(--px) * -1) 0 0 0 var(--navy-dark),
+      var(--px) 0 0 0 var(--navy-dark),
+      calc(var(--px) * 2) calc(var(--px) * 2) 0 0 var(--shadow);
+  }
+
+  /* Chunky arcade button: lifts on hover, presses in on click */
+  .btn {
+    --bg: var(--surface-strong);
+    --fg: var(--navy-dark);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: none;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-display), monospace;
+    font-size: 0.6rem;
+    line-height: 1.4;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow:
+      0 -3px 0 0 var(--navy-dark),
+      0 3px 0 0 var(--navy-dark),
+      -3px 0 0 0 var(--navy-dark),
+      3px 0 0 0 var(--navy-dark),
+      inset 0 -4px 0 0 #00000024,
+      5px 5px 0 0 var(--shadow);
+    transition:
+      transform 80ms steps(2, end),
+      box-shadow 80ms steps(2, end);
+  }
+  .btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow:
+      0 -3px 0 0 var(--navy-dark),
+      0 3px 0 0 var(--navy-dark),
+      -3px 0 0 0 var(--navy-dark),
+      3px 0 0 0 var(--navy-dark),
+      inset 0 -4px 0 0 #00000024,
+      7px 7px 0 0 var(--shadow);
+  }
+  .btn:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow:
+      0 -3px 0 0 var(--navy-dark),
+      0 3px 0 0 var(--navy-dark),
+      -3px 0 0 0 var(--navy-dark),
+      3px 0 0 0 var(--navy-dark),
+      inset 0 4px 0 0 #00000024;
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .btn-primary {
+    --bg: var(--accent-yellow);
+  }
+  .btn-dark {
+    --bg: var(--navy-dark);
+    --fg: var(--surface);
+  }
+  .btn-danger {
+    --bg: var(--coral);
+    --fg: #fff;
+  }
+
+  /* Small square icon button with a 2px outline */
+  .icon-btn {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 2px solid transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: transform 80ms steps(2, end);
+  }
+  .icon-btn:hover {
+    background: var(--accent-yellow);
+    border-color: var(--navy-dark);
+    color: var(--navy-dark);
+    transform: translate(-1px, -1px);
+  }
+  .icon-btn:active {
+    transform: translate(1px, 1px);
+  }
+  .icon-btn-danger:hover {
+    background: var(--coral);
+    color: #fff;
+  }
+
+  /* Mono label tag */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    border: 2px solid var(--navy-dark);
+    background: var(--surface-2);
+    color: var(--navy-dark);
+    font-family: var(--font-mono), monospace;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.6;
+    text-transform: uppercase;
+  }
+
+  .field {
+    width: 100%;
+    padding: 8px 10px;
+    border: 3px solid var(--navy-dark);
+    border-radius: 0;
+    background: var(--surface-strong);
+    color: var(--navy-dark);
+    font-family: var(--font-body), system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+    outline: none;
+    box-shadow: inset 3px 3px 0 #1d1b2e14;
+  }
+  .field:focus {
+    background: var(--sky-pale);
+    box-shadow: 4px 4px 0 var(--accent-yellow);
+  }
+  .field::placeholder {
+    color: var(--gray-text);
+  }
+
+  /* Grass and dirt strip from the site's hero */
+  .ground {
+    height: 48px;
+    border-top: 4px solid var(--navy-dark);
+    background:
+      linear-gradient(to bottom, var(--leaf) 0 12px, var(--leaf-dark) 12px 18px, transparent 18px),
+      repeating-linear-gradient(90deg, transparent 0 40px, #00000014 40px 48px),
+      var(--dirt);
+  }
+
+  .blink {
+    animation: blink 1s step-end infinite;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

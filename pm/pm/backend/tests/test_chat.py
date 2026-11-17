@@ -28,7 +28,7 @@ def mock_ai(monkeypatch, result: AIResponse | None) -> list[dict]:
 
 def board_with_new_card() -> dict:
     board = copy.deepcopy(DEFAULT)
-    board["cards"]["card-new"] = {"id": "card-new", "title": "Test", "details": "", "priority": "high", "dueDate": "2026-11-20"}
+    board["cards"]["card-new"] = {"id": "card-new", "title": "Test", "summary": "", "details": "- Step one", "priority": "high", "dueDate": "2026-11-20"}
     board["columns"][0]["cardIds"].append("card-new")
     return board
 

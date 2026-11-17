@@ -64,7 +64,8 @@ def test_put_then_get_returns_saved_board(client, board_id):
     board["cards"]["card-9"] = {
         "id": "card-9",
         "title": "New",
-        "details": "Notes",
+        "summary": "Notes",
+        "details": "First paragraph.\n\n- One\n- Two",
         "priority": "high",
         "dueDate": "2026-12-01",
     }
@@ -79,13 +80,20 @@ def test_put_then_get_returns_saved_board(client, board_id):
     assert client.get("/api/boards").json()[0]["cardCount"] == 9
 
 
-def test_cards_without_priority_or_due_date_are_accepted(client, board_id):
+def test_cards_without_details_priority_or_due_date_are_accepted(client, board_id):
     board = copy.deepcopy(DEFAULT)
-    board["cards"]["card-9"] = {"id": "card-9", "title": "Old style", "details": ""}
+    board["cards"]["card-9"] = {"id": "card-9", "title": "Old style", "summary": ""}
     board["columns"][0]["cardIds"].append("card-9")
     assert client.put(f"/api/boards/{board_id}", json=board).status_code == 200
     saved = client.get(f"/api/boards/{board_id}").json()["cards"]["card-9"]
-    assert saved == {"id": "card-9", "title": "Old style", "details": "", "priority": None, "dueDate": None}
+    assert saved == {
+        "id": "card-9",
+        "title": "Old style",
+        "summary": "",
+        "details": "",
+        "priority": None,
+        "dueDate": None,
+    }
 
 
 def test_board_persists_across_restarts(db_path):
@@ -166,12 +174,13 @@ INVALID_BOARDS = {
     "card in two columns": make_invalid(lambda b: b["columns"][1]["cardIds"].append("card-1")),
     "card in no column": make_invalid(lambda b: b["columns"][0]["cardIds"].remove("card-1")),
     "card key mismatch": make_invalid(
-        lambda b: b["cards"].update({"card-x": {"id": "card-y", "title": "T", "details": "D"}})
+        lambda b: b["cards"].update({"card-x": {"id": "card-y", "title": "T", "summary": "D"}})
     ),
     "duplicate column id": make_invalid(
         lambda b: b["columns"].append({"id": "col-done", "title": "Again", "cardIds": []})
     ),
     "wrong type": make_invalid(lambda b: b["cards"]["card-1"].update({"details": 3})),
+    "missing summary": make_invalid(lambda b: b["cards"]["card-1"].pop("summary")),
     "missing field": make_invalid(lambda b: b["columns"][0].pop("title")),
     "extra field": make_invalid(lambda b: b.update({"owner": "user"})),
     "unknown priority": make_invalid(lambda b: b["cards"]["card-1"].update({"priority": "urgent"})),

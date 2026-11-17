@@ -34,7 +34,7 @@ describe("moveCard", () => {
 });
 
 describe("due dates", () => {
-  const card = { id: "c", title: "T", details: "", priority: null, dueDate: "2026-11-07" };
+  const card = { id: "c", title: "T", summary: "", details: "", priority: null, dueDate: "2026-11-07" };
 
   it("isOverdue compares with the given day", () => {
     expect(isOverdue(card, "2026-11-08")).toBe(true);

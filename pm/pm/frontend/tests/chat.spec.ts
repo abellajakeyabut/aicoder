@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/boards/*/chat", async (route) => {
     const { message } = route.request().postDataJSON();
     const board = structuredClone(initialData);
-    board.cards["card-ai"] = { id: "card-ai", title: message, details: "", priority: null, dueDate: null };
+    board.cards["card-ai"] = { id: "card-ai", title: message, summary: "", details: "", priority: null, dueDate: null };
     board.columns[0].cardIds.push("card-ai");
     await route.fulfill({ json: { reply: `Added "${message}" to Backlog.`, board } });
   });

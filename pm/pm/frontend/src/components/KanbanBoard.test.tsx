@@ -13,6 +13,8 @@ const renderBoard = async () => {
   return (await screen.findAllByTestId(/column-/i))[0];
 };
 
+const listItems = (element: HTMLElement) => within(element).getAllByRole("listitem").map((item) => item.textContent);
+
 describe("KanbanBoard", () => {
   beforeEach(() => {
     fetchMock = mockApi();
@@ -80,88 +82,164 @@ describe("KanbanBoard", () => {
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   });
 
-  it("adds a card and saves it", async () => {
+  it("adds a card with a summary and saves it", async () => {
     const column = await renderBoard();
     await userEvent.click(within(column).getByRole("button", { name: /add a card/i }));
     await userEvent.type(within(column).getByPlaceholderText(/card title/i), "New card");
-    await userEvent.type(within(column).getByPlaceholderText(/details/i), "Notes");
+    await userEvent.type(within(column).getByPlaceholderText(/summary/i), "Notes");
     await userEvent.click(within(column).getByRole("button", { name: /add card/i }));
     expect(within(column).getByText("New card")).toBeInTheDocument();
 
     await waitFor(() => expect(savedBoards(fetchMock)).toHaveLength(1));
     const saved = lastSavedBoard(fetchMock)!;
     const newId = saved.columns[0].cardIds[2];
-    expect(saved.cards[newId]).toEqual({ id: newId, title: "New card", details: "Notes", priority: null, dueDate: null });
+    expect(saved.cards[newId]).toEqual({
+      id: newId,
+      title: "New card",
+      summary: "Notes",
+      details: "",
+      priority: null,
+      dueDate: null,
+    });
   });
 
-  it("saves empty details as empty and shows a placeholder", async () => {
+  it("saves an empty summary as empty and shows a placeholder", async () => {
     const column = await renderBoard();
     await userEvent.click(within(column).getByRole("button", { name: /add a card/i }));
     await userEvent.type(within(column).getByPlaceholderText(/card title/i), "No notes");
     await userEvent.click(within(column).getByRole("button", { name: /add card/i }));
-    expect(within(column).getByText("No details yet.")).toBeInTheDocument();
+    expect(within(column).getByText("No summary yet.")).toBeInTheDocument();
 
     await waitFor(() => expect(savedBoards(fetchMock)).toHaveLength(1));
     const saved = lastSavedBoard(fetchMock)!;
-    expect(saved.cards[saved.columns[0].cardIds[2]].details).toBe("");
+    expect(saved.cards[saved.columns[0].cardIds[2]].summary).toBe("");
 
     await userEvent.click(within(column).getByRole("button", { name: "Edit No notes" }));
-    expect(within(column).getByLabelText("Edit details")).toHaveValue("");
+    expect(within(screen.getByRole("dialog")).getByLabelText("Summary")).toHaveValue("");
   });
 
-  it("clears details on edit without storing the placeholder", async () => {
+  it("shows the summary on the board and the details only in the dialog", async () => {
+    const column = await renderBoard();
+    const card = within(column).getByTestId("card-card-1");
+    expect(card).toHaveTextContent("Draft quarterly themes");
+    expect(card).toHaveTextContent("Has details");
+    expect(card).not.toHaveTextContent("Pull the top asks");
+    expect(screen.getByTestId("card-card-4")).not.toHaveTextContent("Has details");
+
+    await userEvent.click(card);
+    const dialog = screen.getByRole("dialog", { name: "Align roadmap themes" });
+    expect(dialog).toHaveTextContent("Backlog");
+    expect(dialog).toHaveTextContent("Draft quarterly themes");
+    expect(within(dialog).getByText(/Turn the strategy offsite notes/)).toBeInTheDocument();
+    expect(listItems(dialog)).toEqual([
+      "Pull the top asks from the offsite board",
+      "Pair each theme with one leading metric",
+      "Review with product leads before Friday",
+    ]);
+    expect(dialog).toHaveTextContent("high priority");
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens a card with the keyboard and closes it with Escape", async () => {
+    await renderBoard();
+    screen.getByTestId("card-card-4").focus();
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("dialog", { name: "Refine status language" })).toHaveTextContent("No details yet.");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("edits a card's title, summary and details in the dialog and saves it", async () => {
     const column = await renderBoard();
     await userEvent.click(within(column).getByRole("button", { name: "Edit Align roadmap themes" }));
-    await userEvent.clear(within(column).getByLabelText("Edit details"));
-    await userEvent.click(within(column).getByRole("button", { name: "Save" }));
-
-    expect(within(column).getByText("No details yet.")).toBeInTheDocument();
-    await waitFor(() => expect(lastSavedBoard(fetchMock)?.cards["card-1"].details).toBe(""));
-  });
-
-  it("removes a card and saves it", async () => {
-    const column = await renderBoard();
-    await userEvent.click(within(column).getByRole("button", { name: "Delete Align roadmap themes" }));
-    expect(within(column).queryByText("Align roadmap themes")).not.toBeInTheDocument();
-
-    await waitFor(() => expect(savedBoards(fetchMock)).toHaveLength(1));
-    const saved = lastSavedBoard(fetchMock)!;
-    expect(saved.cards["card-1"]).toBeUndefined();
-    expect(saved.columns[0].cardIds).toEqual(["card-2"]);
-  });
-
-  it("edits a card and saves it", async () => {
-    const column = await renderBoard();
-    await userEvent.click(within(column).getByRole("button", { name: "Edit Align roadmap themes" }));
-    const title = within(column).getByLabelText("Edit title");
+    const dialog = screen.getByRole("dialog", { name: "Edit card" });
+    const title = within(dialog).getByLabelText("Title");
+    expect(title).toHaveFocus();
     await userEvent.clear(title);
     await userEvent.type(title, "Updated title");
-    const details = within(column).getByLabelText("Edit details");
+    const summary = within(dialog).getByLabelText("Summary");
+    await userEvent.clear(summary);
+    await userEvent.type(summary, "Updated summary");
+    const details = within(dialog).getByLabelText("Details");
     await userEvent.clear(details);
-    await userEvent.type(details, "Updated details");
-    await userEvent.click(within(column).getByRole("button", { name: "Save" }));
+    await userEvent.type(details, "Intro line{Enter}{Enter}- First{Enter}- Second");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
 
-    expect(within(column).getByText("Updated title")).toBeInTheDocument();
-    expect(within(column).getByText("Updated details")).toBeInTheDocument();
+    // Saving returns the dialog to the card view
+    const view = screen.getByRole("dialog", { name: "Updated title" });
+    expect(within(view).getByText("Intro line")).toBeInTheDocument();
+    expect(listItems(view)).toEqual(["First", "Second"]);
+    expect(within(column).getByText("Updated summary")).toBeInTheDocument();
     await waitFor(() =>
       expect(lastSavedBoard(fetchMock)?.cards["card-1"]).toEqual({
         id: "card-1",
         title: "Updated title",
-        details: "Updated details",
+        summary: "Updated summary",
+        details: "Intro line\n\n- First\n- Second",
         priority: "high",
         dueDate: "2026-11-14",
       })
     );
   });
 
-  it("cancels an edit without saving", async () => {
+  it("switches from the card view to editing and back without saving", async () => {
+    await renderBoard();
+    await userEvent.click(screen.getByTestId("card-card-3"));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Edit" }));
+    await userEvent.type(within(dialog).getByLabelText("Title"), " changed");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.getByRole("dialog", { name: "Prototype analytics view" })).toBeInTheDocument();
+    expect(savedBoards(fetchMock)).toHaveLength(0);
+  });
+
+  it("clears the details without storing the placeholder", async () => {
     const column = await renderBoard();
     await userEvent.click(within(column).getByRole("button", { name: "Edit Align roadmap themes" }));
-    await userEvent.type(within(column).getByLabelText("Edit title"), " changed");
-    await userEvent.click(within(column).getByRole("button", { name: "Cancel" }));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.clear(within(dialog).getByLabelText("Details"));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
 
+    expect(within(dialog).getByText(/No details yet/)).toBeInTheDocument();
+    expect(within(column).getByTestId("card-card-1")).not.toHaveTextContent("Has details");
+    await waitFor(() => expect(lastSavedBoard(fetchMock)?.cards["card-1"].details).toBe(""));
+  });
+
+  it("cancels an edit opened from the board without saving", async () => {
+    const column = await renderBoard();
+    await userEvent.click(within(column).getByRole("button", { name: "Edit Align roadmap themes" }));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.type(within(dialog).getByLabelText("Title"), " changed");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(within(column).getByText("Align roadmap themes")).toBeInTheDocument();
     expect(savedBoards(fetchMock)).toHaveLength(0);
+  });
+
+  it("deletes a card from the dialog", async () => {
+    const column = await renderBoard();
+    await userEvent.click(within(column).getByTestId("card-card-2"));
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(within(column).queryByText("Gather customer signals")).not.toBeInTheDocument();
+    await waitFor(() => expect(lastSavedBoard(fetchMock)?.columns[0].cardIds).toEqual(["card-1"]));
+  });
+
+  it("removes a card and saves it", async () => {
+    const column = await renderBoard();
+    await userEvent.click(within(column).getByRole("button", { name: "Delete Align roadmap themes" }));
+    expect(within(column).queryByText("Align roadmap themes")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    await waitFor(() => expect(savedBoards(fetchMock)).toHaveLength(1));
+    const saved = lastSavedBoard(fetchMock)!;
+    expect(saved.cards["card-1"]).toBeUndefined();
+    expect(saved.columns[0].cardIds).toEqual(["card-2"]);
   });
 
   it("sets a card's priority and due date, and clears them", async () => {
@@ -170,9 +248,11 @@ describe("KanbanBoard", () => {
     expect(within(card).queryByText("priority")).not.toBeInTheDocument();
 
     await userEvent.click(within(card).getByRole("button", { name: "Edit Gather customer signals" }));
-    await userEvent.selectOptions(within(card).getByLabelText("Priority"), "medium");
-    await userEvent.type(within(card).getByLabelText("Due date"), "2026-12-24");
-    await userEvent.click(within(card).getByRole("button", { name: "Save" }));
+    let dialog = screen.getByRole("dialog");
+    await userEvent.selectOptions(within(dialog).getByLabelText("Priority"), "medium");
+    await userEvent.type(within(dialog).getByLabelText("Due date"), "2026-12-24");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
 
     expect(card).toHaveTextContent("medium priority");
     expect(card).toHaveTextContent("due Dec 24");
@@ -181,11 +261,12 @@ describe("KanbanBoard", () => {
     );
 
     await userEvent.click(within(card).getByRole("button", { name: "Edit Gather customer signals" }));
-    expect(within(card).getByLabelText("Priority")).toHaveValue("medium");
-    expect(within(card).getByLabelText("Due date")).toHaveValue("2026-12-24");
-    await userEvent.selectOptions(within(card).getByLabelText("Priority"), "");
-    await userEvent.clear(within(card).getByLabelText("Due date"));
-    await userEvent.click(within(card).getByRole("button", { name: "Save" }));
+    dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByLabelText("Priority")).toHaveValue("medium");
+    expect(within(dialog).getByLabelText("Due date")).toHaveValue("2026-12-24");
+    await userEvent.selectOptions(within(dialog).getByLabelText("Priority"), "");
+    await userEvent.clear(within(dialog).getByLabelText("Due date"));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(lastSavedBoard(fetchMock)?.cards["card-2"]).toMatchObject({ priority: null, dueDate: null })
     );
@@ -211,6 +292,9 @@ describe("KanbanBoard", () => {
       expect(screen.getByTestId("card-card-6")).toHaveTextContent("Overdue, due Nov 3");
       expect(screen.getByTestId("card-card-1")).not.toHaveTextContent("Overdue");
       expect(screen.getByTestId("card-card-7")).not.toHaveTextContent("Overdue");
+
+      await userEvent.click(screen.getByTestId("card-card-4"));
+      expect(screen.getByRole("dialog")).toHaveTextContent("Overdue, due Nov 7");
     });
   });
 

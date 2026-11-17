@@ -37,56 +37,64 @@
     "card-1": {
       "id": "card-1",
       "title": "Align roadmap themes",
-      "details": "Draft quarterly themes with impact statements and metrics.",
+      "summary": "Draft quarterly themes with impact statements and metrics.",
+      "details": "Turn the strategy offsite notes into three to five themes for next quarter. Each theme needs a one-line impact statement the whole team can repeat.\n\n- Pull the top asks from the offsite board\n- Pair each theme with one leading metric\n- Review with product leads before Friday",
       "priority": "high",
       "dueDate": "2026-11-14"
     },
     "card-2": {
       "id": "card-2",
       "title": "Gather customer signals",
-      "details": "Review support tags, sales notes, and churn feedback.",
+      "summary": "Review support tags, sales notes, and churn feedback.",
+      "details": "Collect what customers are telling us across every channel, so discovery starts from evidence rather than opinion.\n\n- Export the last 90 days of support tags\n- Skim sales call notes for repeated objections\n- Summarize churn survey comments by theme",
       "priority": null,
       "dueDate": null
     },
     "card-3": {
       "id": "card-3",
       "title": "Prototype analytics view",
-      "details": "Sketch initial dashboard layout and key drill-downs.",
+      "summary": "Sketch initial dashboard layout and key drill-downs.",
+      "details": "A clickable prototype of the analytics view, good enough to test with five customers.\n\nStart from the overview: usage over time and the three numbers people check most. Drill-downs open from each number.",
       "priority": "medium",
       "dueDate": null
     },
     "card-4": {
       "id": "card-4",
       "title": "Refine status language",
-      "details": "Standardize column labels and tone across the board.",
+      "summary": "Standardize column labels and tone across the board.",
+      "details": "",
       "priority": "medium",
       "dueDate": "2026-11-07"
     },
     "card-5": {
       "id": "card-5",
       "title": "Design card layout",
-      "details": "Add hierarchy and spacing for scanning dense lists.",
+      "summary": "Add hierarchy and spacing for scanning dense lists.",
+      "details": "Cards should be easy to scan in a dense column.\n\n- Title on top, bold\n- One-line summary underneath\n- Priority and due date as small badges",
       "priority": "low",
       "dueDate": null
     },
     "card-6": {
       "id": "card-6",
       "title": "QA micro-interactions",
-      "details": "Verify hover, focus, and loading states.",
+      "summary": "Verify hover, focus, and loading states.",
+      "details": "- Hover and focus states on every button\n- Loading and empty states\n- Keyboard navigation through the board",
       "priority": "high",
       "dueDate": "2026-11-03"
     },
     "card-7": {
       "id": "card-7",
       "title": "Ship marketing page",
-      "details": "Final copy approved and asset pack delivered.",
+      "summary": "Final copy approved and asset pack delivered.",
+      "details": "",
       "priority": null,
       "dueDate": null
     },
     "card-8": {
       "id": "card-8",
       "title": "Close onboarding sprint",
-      "details": "Document release notes and share internally.",
+      "summary": "Document release notes and share internally.",
+      "details": "Release notes are in the shared drive. Share them in the team channel and close the sprint in the tracker.",
       "priority": null,
       "dueDate": null
     }

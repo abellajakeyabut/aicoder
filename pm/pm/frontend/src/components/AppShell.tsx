@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { AccountDialog } from "@/components/AccountDialog";
 import { BoardSidebar } from "@/components/BoardSidebar";
 import { KanbanBoard } from "@/components/KanbanBoard";
-import { errorClass, glowBackground, primaryButtonClass } from "@/components/ui";
+import { errorClass, primaryButtonClass } from "@/components/ui";
 import * as api from "@/lib/api";
 import type { BoardSummary, User } from "@/lib/api";
 import type { BoardData } from "@/lib/kanban";
@@ -85,7 +85,6 @@ export const AppShell = ({ user, onSignOut }: { user: User; onSignOut: () => voi
 
   return (
     <div className="relative flex min-h-screen overflow-clip">
-      {glowBackground}
       {boards && (
         <BoardSidebar
           user={user}
@@ -101,7 +100,7 @@ export const AppShell = ({ user, onSignOut }: { user: User; onSignOut: () => voi
       )}
       <div className="relative flex min-w-0 flex-1 flex-col">
         {error && (
-          <p role="alert" className={`${errorClass} mx-6 mt-4 rounded-2xl border border-[var(--stroke)] bg-white px-4 py-3`}>
+          <p role="alert" className={`${errorClass} mx-6 mt-4`}>
             {error}
           </p>
         )}
@@ -110,13 +109,15 @@ export const AppShell = ({ user, onSignOut }: { user: User; onSignOut: () => voi
           <KanbanBoard key={active.id} boardId={active.id} name={active.name} onChange={updateCount} />
         ) : (
           boards && (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-12 text-center">
-              <h1 className="font-display text-2xl font-semibold text-[var(--navy-dark)]">No boards yet</h1>
-              <p className="text-sm text-[var(--gray-text)]">Create a board to start planning.</p>
+            <div className="flex flex-1 flex-col items-center justify-center gap-5 p-12 text-center">
+              <h1 className="font-display text-xl text-[var(--navy-dark)] [text-shadow:4px_4px_0_var(--accent-yellow)]">
+                No boards yet
+              </h1>
+              <p className="text-sm text-[var(--ink-soft)]">Create a board to start planning.</p>
               <button
                 type="button"
                 onClick={() => create("My board")}
-                className={`${primaryButtonClass} flex items-center gap-2`}
+                className={primaryButtonClass}
               >
                 <Plus size={15} />
                 Create a board
